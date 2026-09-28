@@ -104,7 +104,7 @@ export const ja = {
   tutorialSlideConfirmPoint: "得点を確定します。",
   tutorialRallyEndedConfirmPoint: "ラリー終了・得点を確定",
   tutorialConfirmPointButton: "得点を確定",
-  gotIt: "わかった",
+  gotIt: "OK",
   subtitle: "すべてのラリーを記録し、すべてのプレーを分析する。",
   author: "作者",
   contactEmail: "連絡先メール",
