@@ -1,215 +1,169 @@
 # SyncScout Live
 
-> **このリポジトリは [OpenVolleyScout](https://github.com/napo/openvolleyscout)（© napo, AGPL-3.0）の改変版です。**
-> courtendvb が 2026-09-26 にフォークし、以降の変更はコミット履歴にあります。
-> ライセンスは元と同じく [AGPL-3.0](LICENSE) です。
->
-> - 公開URL: https://courtendvb.github.io/SyncScout-live/
-> - 主な変更: GitHub Pages の公開パス変更、PWA 化（iPad のホーム画面追加・オフライン動作）
->
-> This is a modified version of OpenVolleyScout. The original README follows.
-
----
-
-# OpenVolleyScout
-
 <p align="center">
-  <img src="src/assets/openvolleyscout.svg" alt="OpenVolleyScout Logo" width="400"/>
+  <img src="src/assets/syncscout-live-logo.svg" alt="SyncScout Live" width="400"/>
 </p>
 
 <p align="center">
-  <b>Analyze. Scout. Improve.</b>
+  <b>試合会場で、タブレットひとつでライブスカウティング。</b>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-active%20development-orange"/>
+  <img src="https://img.shields.io/badge/version-0.1.0-orange"/>
   <img src="https://img.shields.io/badge/license-AGPL--3.0-blue"/>
-  <img src="https://img.shields.io/badge/platform-web-blue"/>
+  <img src="https://img.shields.io/badge/platform-web%20%7C%20PWA-blue"/>
   <img src="https://img.shields.io/badge/made%20with-React%20%2B%20Vite-61dafb"/>
 </p>
 
-OpenVolleyScout is a local-first volleyball scouting and analysis application
-for match setup, live rally recording, DataVolley import/export,
-tactical-system editing, video review, team data study, and match reporting.
+SyncScout Live は、バレーボールの試合をその場で記録するためのスカウティングアプリです。
+iPad などのタブレットでの入力を前提に、ボタン中心の操作・日本語 UI・オフライン動作に対応しています。
+記録した試合は DataVolley 互換の `.dvw` として書き出せるほか、YouTube 動画と時刻を合わせて SyncScout に送信できます。
 
-The application runs in the browser and can also be packaged as a desktop app
-with Tauri. Match projects, team archives, rosters, competition names, and
-video-analysis metadata are persisted on the device with IndexedDB. Locale and
-tactical-system editor state are stored in `localStorage`.
+- 公開 URL: https://courtendvb.github.io/SyncScout-live/
+- バージョン: 0.1.0（OpenVolleyScout 0.16.1 ベース）
 
-Live demo: https://napo.github.io/openvolleyscout
+> [!NOTE]
+> このリポジトリは [OpenVolleyScout](https://github.com/napo/openvolleyscout)（© Maurizio Napolitano / napo, AGPL-3.0）の改変版です。
+> courtendvb が 2026-09-26 にフォークし、以降の変更はコミット履歴と下記「OpenVolleyScout からの主な変更点」にあります。
+> ライセンスは元と同じく [AGPL-3.0](LICENSE) です。
+>
+> This is a modified version of OpenVolleyScout, licensed under AGPL-3.0.
 
-> The project is under active development. Some workflows are complete enough
-> to use as foundations, while analysis and advanced tactical automation are
-> still evolving.
+## 使い方
 
-## Installation & Downloads
+### ブラウザで使う（インストール不要）
 
-### Desktop Application
+[公開 URL](https://courtendvb.github.io/SyncScout-live/) を Safari / Chrome などのブラウザで開くだけで使えます。
 
-Download packaged builds from the
-[latest GitHub release](https://github.com/napo/openvolleyscout/releases/latest).
-Available artifacts can vary by release and platform.
+### ホーム画面に追加する（PWA）
 
-### Web Browser (No Installation)
+iPad の Safari なら「共有」→「ホーム画面に追加」で、アプリのように起動できます。
+一度開けばアプリ全体が端末に保存されるため、体育館などネットワークのない場所でも動作します。
 
-No installation needed — use the [live demo](https://napo.github.io/openvolleyscout) directly in any modern browser.
+新しいバージョンが公開されると「新しいバージョン」の案内が表示されます。
+ラリーの途中で勝手に再読み込みされることはなく、「今すぐ更新」を押したときか、アプリを閉じたあとに更新されます。
 
-See all [releases](https://github.com/napo/openvolleyscout/releases) for older versions.
+### データの保存場所
 
-## Current Capabilities
+チーム・試合・入力記録などのデータは、使っている端末のブラウザ内（IndexedDB）にだけ保存され、サーバーには送られません。
+ブラウザのデータを消すと記録も消えるため、「データ」画面からこまめにバックアップ（`.ovs`）を書き出してください。
+試合終了時とデータ画面にバックアップのリマインダーが表示されます。
 
-- Create and manage archived teams and rosters.
-- Import and export rosters in JSON/CSV formats.
-- Create match projects from competition metadata, selected teams, and
-  match-specific rosters.
-- Configure match-level scouting settings such as set targets and tie-break
-  targets.
-- Start sets from selected lineups and serving team.
-- Record rally events, touches, points, substitutions, timeouts, score
-  corrections, undo, set endings, and match endings through an event log.
-- Persist scouting progress back into the active `MatchProject`.
-- Generate live quick stats, set summaries, rally summaries, and DataVolley-like
-  rally strings from recorded events.
-- Import DataVolley `.dvw` files with preview, diagnostics, duplicate handling,
-  team archive merge, and validation (non-blocking import warnings can be
-  hidden from a Settings toggle; blocking errors always stop the import).
-- Export OpenVolleyScout matches back to DataVolley-compatible `.dvw` files.
-- Build match reports with printable, PNG, and PDF export.
-- Explore team and player dashboards with filters, evaluation distributions,
-  efficiency, points/errors, side-out study (by court zone or by setter
-  call/attack combination), heatmaps, and radar comparison charts.
-- Link local or YouTube videos to matches, synchronize actions, filter clips,
-  edit action codes, and export selected clips where supported.
-- Watch a local file, YouTube, webcam, or RTSP video while scouting live —
-  floating over the court by default, or docked flush beside it when the
-  court is in vertical orientation — with touches recording their video
-  position automatically.
-- Switch the live scouting court between landscape and portrait orientation,
-  with an in-toolbar rotate button and a team-swap button usable at any
-  point during a rally.
-- Aggregate saved matches for team-level study, cross-database similarity
-  comparison, and multi-match video analysis.
-- Review a "Priorities" view under Trends that ranks a team's or player's
-  technical and tactical-rotation indicators against their own benchmark
-  (their wins within the selected match window), with radar/bar charts and
-  a per-category drill-down of evaluation mix over time.
-- Edit and persist reception and defense system libraries in the browser.
-- Use the app in multiple UI languages.
+例外は「SyncScout に送る」を使ったときで、このときだけ各チームが設定した送信先に試合データが送られます。
 
-## Technical Stack
+## 主な機能
 
-- React 18
-- TypeScript
-- Vite
-- Tauri 2
-- React Router
-- Zustand
+### ライブ入力
+
+ライブ画面のヘッダーで、入力のレベルを 3 段階から選べます（端末ごとに記憶されます）。
+
+| レベル | 内容 |
+| --- | --- |
+| **タグ** | ボタンだけで記録します。チーム・コート上の選手・スキル・評価を順に押すだけで、次のチームやスキルはラリーの流れから推測されます。動画を見ながらの入力にも使えます。 |
+| **コート** | 大きなボタンに加えて、コート上をなぞってゾーンやコースを記録します。 |
+| **詳細** | OpenVolleyScout 本来の DataVolley 形式の入力です（ボールの種類、ブロッカー、コンビネーションコール、コード直接入力）。 |
+
+- 評価バーは タグ／コート では悪い順に `= / - ! + #` と並びます（`!` は `-` と `+` の中間）。詳細では DataVolley の元の順序のままです。
+- 得点時には「どちらに・なぜ得点したか」を確認表示し、画面端のフラッシュと（任意で）確定音で入力を知らせます。
+- タイムアウト・交代・得点修正・取り消しは大きなボタンで操作できます。取り消し履歴は試合ごとに保存され、再読み込み後も使えます。
+- iPad の Safari がバックグラウンドのタブを再読み込みしても、最後に開いていた試合に戻ります。
+- コートの縦向き・横向き切り替えや、コートサイドの入れ替えができます。
+
+### 背番号だけで始められる名簿
+
+- 選手名は任意です。名前のない選手は `#12` のように背番号で表示されます。
+- `1-12 L13` のような書き方で、背番号をまとめて入力できます（チーム画面、試合設定、セット開始、交代）。
+- 試合中に追加した選手は、試合の名簿とチームの両方に登録されます。あとからチーム画面で名前を入れると、保存済みの試合にも反映されます。
+- 公式の名簿構成ルールは警告にとどめ、名簿が空でもスカウティングを始められます。
+- 大会名・会場は任意です（空欄なら「練習試合」）。セッターを選ばなくても開始できます。
+
+### SyncScout への送信
+
+試合終了画面または分析画面の「SyncScout に送る」から、試合データを YouTube 動画と組み合わせて SyncScout に登録できます。
+
+- YouTube の URL と、最初のサーブの動画上の時刻を入れると、全プレーの時刻がそこに合わせて書き出されます（`?t=` 付きの共有リンクなら時刻は自動で入ります）。
+- 動画を開いたまま入力したプレーは、その動画位置がそのまま使われます。
+- 再生位置が早い・遅い場合は −15〜+15 秒の微調整ができます（端末ごとに記憶されます）。
+- 送信先（Supabase の URL・anon キー・ビューアの URL）は、設定画面で端末ごとに入力します。アプリには何も組み込まれていないため、公開版から他人のデータベースに書き込むことはありません。
+
+### OpenVolleyScout から引き継いだ機能
+
+- チームと名簿の管理、JSON / CSV での名簿の読み込み・書き出し
+- DataVolley `.dvw` の読み込み（プレビュー・診断つき）と書き出し
+- 試合レポート（印刷・PNG・PDF）
+- チーム・選手のダッシュボード、サイドアウト分析、ヒートマップ、レーダーチャート、傾向分析
+- ローカル動画・YouTube と試合の同期、クリップの絞り込みと書き出し
+- ライブ入力中の動画表示（ローカルファイル、YouTube、Web カメラ、RTSP）
+- レセプション・ディフェンスシステムの編集
+- `.ovs` 形式での試合・データベース全体のバックアップと同期
+
+## OpenVolleyScout からの主な変更点
+
+- **公開・配布**: GitHub Pages の公開パスを `/SyncScout-live/` に変更し、オフラインで動く PWA として配布
+- **名前とアイコン**: SyncScout Live に変更。About ページと PDF には OpenVolleyScout をベースとして明記
+- **言語**: 日本語 UI を追加して既定に。日本語・英語以外のロケールは削除
+- **軽量化**: Tiebreak Tech `.db` の読み込み（sql.js）を削除し、分析・グラフ・設定などは必要になったときに読み込むように変更（初回読み込み 2.6 MB → 0.9 MB）
+- **入力**: タッチ操作向けの入力（タグ／コート／詳細の 3 段階）、背番号中心の名簿
+- **連携**: 動画時刻を合わせた `.dvw` 書き出しと SyncScout への送信
+- **修正**: 日付をローカル時刻で扱うように修正（日本時間の午前 9 時前に前日の日付になる問題）、試合レポートで進行中のセットを勝敗に数えないように修正 など
+
+詳しくは `git log` を参照してください。
+[CHANGELOG.md](CHANGELOG.md) は OpenVolleyScout 0.16.1 までの履歴です。
+
+## 技術スタック
+
+- React 18 / TypeScript / Vite
+- vite-plugin-pwa（Web 版のみ）
+- Tauri 2（デスクトップ・Android 版のビルド用。OpenVolleyScout から引き継ぎ）
+- React Router / Zustand
 - Dexie / IndexedDB
-- Recharts
-- simpleheat
-- pdfmake
+- Recharts / simpleheat / pdfmake
 
-## Local Development
-
-Install dependencies:
+## ローカル開発
 
 ```bash
-npm install
+npm install        # 依存関係のインストール
+npm run dev        # 開発サーバーの起動
+npm run build      # 本番ビルド
+npm run preview    # 本番ビルドのプレビュー
+npm test           # 検証スクリプトとテストの実行
 ```
 
-Start the development server:
+`npm test` は、試合統計・ライブ入力フロー・DataVolley 書き出しの検証スクリプトと、ユニットテスト（node:test と Vitest）を実行します。
 
-```bash
-npm run dev
-```
+`main` ブランチに push すると、GitHub Actions（`.github/workflows/deploy.yml`）で GitHub Pages に公開されます。
 
-Build for production:
+## 画面（ルート）
 
-```bash
-npm run build
-```
+ハッシュルーティングのため、URL は `#/...` の形になります。
 
-Preview a production build:
+| ルート | 画面 |
+| --- | --- |
+| `#/` | トップ |
+| `#/teams` | チームと名簿の管理 |
+| `#/match` | 試合設定 |
+| `#/scouting` | ライブ入力 |
+| `#/analysis` | 試合レポート、ダッシュボード、DataVolley 書き出し、動画分析、SyncScout 送信 |
+| `#/team-analysis` | 複数試合のチーム分析 |
+| `#/systems` | レセプション・ディフェンスシステムの編集 |
+| `#/load-data` | 保存した試合の読み込み、バックアップ |
+| `#/settings` | 言語、SyncScout 連携、ローカルデータの操作 |
+| `#/about` | このアプリについて |
 
-```bash
-npm run preview
-```
+## ドキュメント
 
-Run the current validation script:
-
-```bash
-npm test
-```
-
-`npm test` currently runs match-stat validation, live scouting flow validation,
-DataVolley export validation, and the unit test suite.
-
-## Main Application Routes
-
-The app uses hash routing, so routes are rendered under `#/...`.
-
-- `#/` - landing page
-- `#/teams` - archived team and roster management
-- `#/team-analysis` - multi-match team data study
-- `#/match` - match setup workflow
-- `#/scouting` - live scouting workflow
-- `#/systems` - reception and defense system editors
-- `#/analysis` - match report, dashboards, DataVolley export, and video analysis
-- `#/load-data` - saved match project loading
-- `#/settings` - locale and local-data actions
-- `#/about` - project information
-
-## Documentation
-
-Start with [docs/README.md](docs/README.md).
-
-Important entry points:
+[docs/](docs/README.md) 以下の資料は OpenVolleyScout から引き継いだもの（英語）で、上記の変更点はまだ反映されていません。
+アーキテクチャやデータモデルを調べるときの入口として使えます。
 
 - [User Guide](docs/user-guide.md)
 - [Architecture](docs/architecture.md)
 - [Data Model](docs/data-model.md)
-- [Domain Model](docs/domain-model.md)
 - [Persistence](docs/persistence.md)
 - [Scouting Architecture](docs/scouting.md)
-- [Tactical Systems](docs/systems.md)
 - [Code Structure](docs/code-structure.md)
 - [Developer Guidelines](docs/developer-guidelines.md)
 
-## Project Status
+## ライセンスとクレジット
 
-Implemented foundations:
-
-- local match and archive persistence
-- match creation and readiness validation
-- event-sourced scouting session replay
-- scouting persistence into `MatchProject.events` and `MatchProject.scoutingSession`
-- DataVolley import and export
-- match statistics builder and validation fixtures
-- match report generation with print, PNG, and PDF export
-- performance dashboards, side-out study, heatmaps, and team aggregation
-- video analysis with synchronization and clip workflows
-- reception and defense system editors backed by `localStorage`
-- multilingual UI with persisted locale choice
-
-Still in progress:
-
-- broader DataVolley compatibility for edge cases
-- advanced player suggestion from tactical systems
-- persistent tactical-system repository in IndexedDB
-- deeper team/system association workflows
-- broader automated test coverage
-
-## Preview
-
-![home](docs/images/00-home.png)  
-![team](docs/images/01-team.png)  
-![match](docs/images/02-match.png)  
-![configurematch](docs/images/03-prematch.png)  
-![roster](docs/images/04-roster.png)  
-![start](docs/images/05-start.png)  
-![start_scouting](docs/images/06-scouting_start.png)  
-![scouting](docs/images/07-scouting_reception.png)  
-![matchreporto](docs/images/08-matchreport.png)  
-![charts](docs/images/09-charts.png)  
-![systems](docs/images/10-system_reception.png)
+- SyncScout Live は [GNU Affero General Public License v3.0](LICENSE) で公開しています。
+- ベース: [OpenVolleyScout](https://github.com/napo/openvolleyscout) © Maurizio Napolitano (napo)
