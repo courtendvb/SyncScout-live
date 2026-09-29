@@ -46,7 +46,15 @@ interface TagInputPanelProps {
   canUndo: boolean;
   /** Records a substitution before the current rally; false when it is not allowed. */
   onSubstitute: (teamSide: TeamSide, playerOutId: string, playerInId: string) => boolean;
+  /**
+   * A jersey number typed on the keypad: adds the player to the team when new and,
+   * with a position, puts them in that empty lineup position. Resolves to the
+   * player's id, or null when it could not be done.
+   */
+  onAssignJersey: (teamSide: TeamSide, jerseyNumber: number, position: CourtPosition | null) => Promise<string | null>;
 }
+
+const KEYPAD_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
 /**
  * Button-based tagging: player → (skill) → evaluation records one touch.
@@ -69,6 +77,7 @@ export function TagInputPanel({
   onUndo,
   canUndo,
   onSubstitute,
+  onAssignJersey,
 }: TagInputPanelProps) {
   const { t } = useTranslation();
   const suggestion = suggestNextTag({ servingTeam, currentRallyTouches });
@@ -80,6 +89,22 @@ export function TagInputPanel({
   // A bench player was tagged: ask whom they replaced before recording the tag.
   const [pendingSubstitution, setPendingSubstitution] = useState<{ evaluation: SkillEvaluation } | null>(null);
   const [substitutionError, setSubstitutionError] = useState(false);
+  // Jersey keypad: opened for an empty position (or any number), and on its own
+  // for the server while position 1 is still empty.
+  const [keypadPosition, setKeypadPosition] = useState<CourtPosition | null | undefined>(undefined);
+  const [keypadDismissed, setKeypadDismissed] = useState(false);
+  const [digits, setDigits] = useState('');
+  const [jerseyAwaitingPosition, setJerseyAwaitingPosition] = useState<number | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignError, setAssignError] = useState(false);
+
+  const closeKeypad = () => {
+    setKeypadPosition(undefined);
+    setKeypadDismissed(true);
+    setDigits('');
+    setJerseyAwaitingPosition(null);
+    setAssignError(false);
+  };
 
   // Every new tag (or a new rally) starts again from the suggestion.
   useEffect(() => {
@@ -89,6 +114,11 @@ export function TagInputPanel({
     setShowBench(false);
     setPendingSubstitution(null);
     setSubstitutionError(false);
+    setKeypadPosition(undefined);
+    setKeypadDismissed(false);
+    setDigits('');
+    setJerseyAwaitingPosition(null);
+    setAssignError(false);
   }, [currentRallyTouches.length, servingTeam]);
 
   const teamSide: TeamSide = teamOverride ?? suggestion?.teamSide ?? leftTeamSide;
@@ -109,10 +139,62 @@ export function TagInputPanel({
   const effectivePlayerId = playerId ?? (skill === 'serve' ? serverId : null);
   const selectedPlayer = team.players.find((player) => player.id === effectivePlayerId) ?? null;
   const evaluations = getEvaluationsForSkill(skill);
+  const emptyPositions = courtPlayers.filter((entry) => !entry.player).map((entry) => entry.position);
+  const asksForServer = skill === 'serve' && !serverId && !playerId && !keypadDismissed;
+  const keypadTarget = keypadPosition !== undefined ? keypadPosition : asksForServer ? 1 : undefined;
+  const isKeypadOpen = keypadTarget !== undefined || jerseyAwaitingPosition !== null;
 
   const teamName = (side: TeamSide) => (side === 'home' ? homeTeam.name : awayTeam.name) || t(side === 'home' ? 'home' : 'away');
 
   const isOnCourtOrLibero = (player: Player) => onCourtIds.has(player.id) || liberos.some((libero) => libero.id === player.id);
+
+  const openKeypad = (position: CourtPosition | null) => {
+    setKeypadPosition(position);
+    setDigits('');
+    setJerseyAwaitingPosition(null);
+    setAssignError(false);
+  };
+
+  const assignJersey = async (jerseyNumber: number, position: CourtPosition | null) => {
+    setIsAssigning(true);
+    setAssignError(false);
+    const assignedId = await onAssignJersey(teamSide, jerseyNumber, position);
+    setIsAssigning(false);
+    if (!assignedId) {
+      setAssignError(true);
+      return;
+    }
+    setPlayerId(assignedId);
+    closeKeypad();
+  };
+
+  const submitJersey = () => {
+    const jerseyNumber = Number(digits);
+    if (!jerseyNumber || isAssigning) return;
+    const existing = team.players.find((player) => player.jerseyNumber === jerseyNumber);
+
+    if (keypadTarget !== null && keypadTarget !== undefined) {
+      void assignJersey(jerseyNumber, keypadTarget);
+      return;
+    }
+    // Any number: someone already on court is simply selected; a new player
+    // serving takes position 1; otherwise ask which empty position they are in.
+    if (existing && isOnCourtOrLibero(existing)) {
+      setPlayerId(existing.id);
+      closeKeypad();
+      return;
+    }
+    if (skill === 'serve' && emptyPositions.includes(1)) {
+      void assignJersey(jerseyNumber, 1);
+      return;
+    }
+    if (emptyPositions.length > 0) {
+      setJerseyAwaitingPosition(jerseyNumber);
+      return;
+    }
+    // Court full: the player joins the team and the tag asks whom they replaced.
+    void assignJersey(jerseyNumber, null);
+  };
 
   const handleEvaluation = (evaluation: SkillEvaluation) => {
     if (!selectedPlayer || pendingPoint) return;
@@ -186,125 +268,189 @@ export function TagInputPanel({
 
   return (
     <section className="tag-input" aria-label={t('tagInputTitle')}>
-      <div className="tag-input__rally" aria-live="polite">
-        {currentRallyTouches.length === 0 ? (
-          <span className="tag-input__rally-empty">{t('tagRallyEmpty')}</span>
-        ) : currentRallyTouches.map((touch) => {
-          const players = touch.teamSide === 'home' ? homeTeam.players : awayTeam.players;
-          const jersey = players.find((player) => player.id === touch.playerId)?.jerseyNumber;
-          return (
-            <span key={touch.id} className={`tag-input__chip tag-input__chip--${touch.teamSide === leftTeamSide ? 'left' : 'right'}`}>
-              #{jersey} {t(getSkillTranslationKey(touch.skill))} {touch.evaluation ?? ''}
-            </span>
-          );
-        })}
-      </div>
-
-      <div className="tag-input__teams" role="group" aria-label={t('selectTeam')}>
-        {[leftTeamSide, rightTeamSide].map((side) => (
-          <button
-            key={side}
-            type="button"
-            className={`tag-input__team${teamSide === side ? ' is-selected' : ''}`}
-            aria-pressed={teamSide === side}
-            onClick={() => { setTeamOverride(side); setPlayerId(null); }}
-          >
-            {teamName(side)}
-          </button>
-        ))}
-      </div>
-
-      <div className="tag-input__players">
-        <div className="tag-input__court">
-          {courtPlayers.map(({ position, player }) => (player
-            ? renderPlayerButton(player, `P${position}${playerLabel(player) ? ` ${playerLabel(player)}` : ''}`)
-            : <span key={position} className="tag-input__player tag-input__player--empty">P{position}</span>))}
+      {/* Who (team, player) and what (skill, grade, point): side by side on a landscape phone. */}
+      <div className="tag-input__who">
+        <div className="tag-input__rally" aria-live="polite">
+          {currentRallyTouches.length === 0 ? (
+            <span className="tag-input__rally-empty">{t('tagRallyEmpty')}</span>
+          ) : currentRallyTouches.map((touch) => {
+            const players = touch.teamSide === 'home' ? homeTeam.players : awayTeam.players;
+            const jersey = players.find((player) => player.id === touch.playerId)?.jerseyNumber;
+            return (
+              <span key={touch.id} className={`tag-input__chip tag-input__chip--${touch.teamSide === leftTeamSide ? 'left' : 'right'}`}>
+                #{jersey} {t(getSkillTranslationKey(touch.skill))} {touch.evaluation ?? ''}
+              </span>
+            );
+          })}
         </div>
-        <div className="tag-input__extra">
-          {liberos.map((player) => renderPlayerButton(player, t('libero')))}
-          <button type="button" className="tag-input__bench-toggle" aria-expanded={showBench} onClick={() => setShowBench((open) => !open)}>
-            {t('tagBench')}
-          </button>
-        </div>
-        {showBench && <div className="tag-input__bench">{bench.map((player) => renderPlayerButton(player))}</div>}
-      </div>
 
-      <div className="tag-input__skills" role="group" aria-label={t('skill')}>
-        {TAG_SKILLS.map((candidate) => (
-          <button
-            key={candidate}
-            type="button"
-            className={`tag-input__skill${skill === candidate ? ' is-selected' : ''}`}
-            aria-pressed={skill === candidate}
-            onClick={() => setSkillOverride(candidate)}
-          >
-            {t(getSkillTranslationKey(candidate))}
-          </button>
-        ))}
-      </div>
-
-      <div className="tag-input__evals" role="group" aria-label={t('evaluation')}>
-        {EVALUATION_ORDER.map((evaluation) => {
-          const available = evaluations.includes(evaluation);
-          return (
+        <div className="tag-input__teams" role="group" aria-label={t('selectTeam')}>
+          {[leftTeamSide, rightTeamSide].map((side) => (
             <button
-              key={evaluation}
+              key={side}
               type="button"
-              className={`tag-input__eval tag-input__eval--${EVAL_SUFFIX[evaluation].toLowerCase()}`}
-              disabled={!available || !selectedPlayer || Boolean(pendingPoint)}
-              onClick={() => handleEvaluation(evaluation)}
+              className={`tag-input__team${teamSide === side ? ' is-selected' : ''}`}
+              aria-pressed={teamSide === side}
+              onClick={() => { setTeamOverride(side); setPlayerId(null); }}
             >
-              <span className="tag-input__eval-symbol">{evaluation}</span>
-              <span className="tag-input__eval-label">{available ? t(evalShortLabelKey(skill, evaluation)) : ''}</span>
+              {teamName(side)}
             </button>
-          );
-        })}
+          ))}
+        </div>
+
+        <div className="tag-input__players">
+          <div className="tag-input__court">
+            {courtPlayers.map(({ position, player }) => (player
+              ? renderPlayerButton(player, `P${position}${playerLabel(player) ? ` ${playerLabel(player)}` : ''}`)
+              : (
+              <button
+                key={position}
+                type="button"
+                className={`tag-input__player tag-input__player--empty${keypadTarget === position ? ' is-selected' : ''}`}
+                onClick={() => openKeypad(position)}
+              >
+                <strong>+</strong>
+                <span>P{position}</span>
+              </button>
+            )))}
+          </div>
+          <div className="tag-input__extra">
+            {liberos.map((player) => renderPlayerButton(player, t('libero')))}
+            <button type="button" className="tag-input__bench-toggle" onClick={() => openKeypad(null)}>
+              {t('tagJerseyButton')}
+            </button>
+            <button type="button" className="tag-input__bench-toggle" aria-expanded={showBench} onClick={() => setShowBench((open) => !open)}>
+              {t('tagBench')}
+            </button>
+          </div>
+          {showBench && <div className="tag-input__bench">{bench.map((player) => renderPlayerButton(player))}</div>}
+        </div>
       </div>
 
-      {pendingSubstitution && selectedPlayer ? (
-        <div className="tag-input__confirm tag-input__substitution" role="alertdialog">
-          <span>
-            {t('tagSubstitutionQuestion', { player: `#${selectedPlayer.jerseyNumber}` })}
-            {substitutionError ? <small className="tag-input__substitution-error">{t('tagSubstitutionNotAllowed')}</small> : null}
-          </span>
-          <div className="tag-input__substitution-options">
-            {courtPlayers
-              .filter((entry) => entry.player && !entry.player.isLibero)
-              .map(({ position, player }) => (
-                <button key={player!.id} type="button" className="tag-input__substitution-option" onClick={() => handleSubstitutionChoice(player!.id)}>
-                  #{player!.jerseyNumber} <small>P{position}</small>
+      <div className="tag-input__what">
+        {isKeypadOpen ? (
+          <div className="tag-input__keypad" role="group" aria-label={t('tagJerseyButton')}>
+            <div className="tag-input__keypad-head">
+              <span>
+                {jerseyAwaitingPosition !== null
+                  ? t('tagJerseyWhichPosition', { player: `#${jerseyAwaitingPosition}` })
+                  : keypadTarget
+                    ? t('tagJerseyPromptPosition', { team: teamName(teamSide), position: `P${keypadTarget}` })
+                    : t('tagJerseyPrompt', { team: teamName(teamSide) })}
+              </span>
+              {jerseyAwaitingPosition === null ? <strong className="tag-input__keypad-display">{digits || '–'}</strong> : null}
+            </div>
+            {jerseyAwaitingPosition !== null ? (
+              <div className="tag-input__keypad-grid">
+                {emptyPositions.map((position) => (
+                  <button key={position} type="button" disabled={isAssigning} onClick={() => void assignJersey(jerseyAwaitingPosition, position)}>
+                    P{position}
+                  </button>
+                ))}
+                <button type="button" disabled={isAssigning} onClick={() => void assignJersey(jerseyAwaitingPosition, null)}>
+                  {t('tagJerseyFromBench')}
+                </button>
+              </div>
+            ) : (
+              <div className="tag-input__keypad-grid">
+                {KEYPAD_DIGITS.map((digit) => (
+                  <button key={digit} type="button" onClick={() => setDigits((current) => (current.length < 3 ? current + digit : current))}>
+                    {digit}
+                  </button>
+                ))}
+                <button type="button" aria-label={t('tagJerseyBackspace')} onClick={() => setDigits((current) => current.slice(0, -1))}>⌫</button>
+                <button type="button" onClick={() => setDigits((current) => (current && current.length < 3 ? current + '0' : current))}>0</button>
+                <button type="button" className="tag-input__keypad-ok" disabled={!Number(digits) || isAssigning} onClick={submitJersey}>
+                  OK
+                </button>
+              </div>
+            )}
+            {assignError ? <small className="tag-input__substitution-error">{t('tagJerseyNotAssigned')}</small> : null}
+            <button type="button" className="tag-input__keypad-cancel" onClick={closeKeypad}>
+              {t('cancel')}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="tag-input__skills" role="group" aria-label={t('skill')}>
+              {TAG_SKILLS.map((candidate) => (
+                <button
+                  key={candidate}
+                  type="button"
+                  className={`tag-input__skill${skill === candidate ? ' is-selected' : ''}`}
+                  aria-pressed={skill === candidate}
+                  onClick={() => setSkillOverride(candidate)}
+                >
+                  {t(getSkillTranslationKey(candidate))}
                 </button>
               ))}
-          </div>
-          <button type="button" className="tag-input__confirm-no" onClick={() => setPendingSubstitution(null)}>
-            {t('cancel')}
-          </button>
-        </div>
-      ) : pendingPoint ? (
-        <div className="tag-input__confirm" role="alertdialog">
-          <span>{pointSummary(pendingPoint)}</span>
-          {/* The tag was the last recorded action, so the regular undo removes exactly it
-              (and its undo entry); removing only the touch would leave a stale entry behind. */}
-          <button type="button" className="tag-input__confirm-no" onClick={() => { setPendingPoint(null); onUndo(); }}>
-            {t('tagUndoTag')}
-          </button>
-          <button type="button" className="tag-input__confirm-yes" onClick={() => { onFinalizeRally(pendingPoint.teamSide, pendingPoint.reason); setPendingPoint(null); }}>
-            {t('confirm')}
-          </button>
-        </div>
-      ) : (
-        <div className="tag-input__footer">
-          <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(leftTeamSide)}>
-            {t('pointForTeam', { team: teamName(leftTeamSide) })}
-          </button>
-          <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
-            {t('undoAction')}
-          </button>
-          <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(rightTeamSide)}>
-            {t('pointForTeam', { team: teamName(rightTeamSide) })}
-          </button>
-        </div>
-      )}
+            </div>
+
+            <div className="tag-input__evals" role="group" aria-label={t('evaluation')}>
+              {EVALUATION_ORDER.map((evaluation) => {
+                const available = evaluations.includes(evaluation);
+                return (
+                  <button
+                    key={evaluation}
+                    type="button"
+                    className={`tag-input__eval tag-input__eval--${EVAL_SUFFIX[evaluation].toLowerCase()}`}
+                    disabled={!available || !selectedPlayer || Boolean(pendingPoint)}
+                    onClick={() => handleEvaluation(evaluation)}
+                  >
+                    <span className="tag-input__eval-symbol">{evaluation}</span>
+                    <span className="tag-input__eval-label">{available ? t(evalShortLabelKey(skill, evaluation)) : ''}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {pendingSubstitution && selectedPlayer ? (
+              <div className="tag-input__confirm tag-input__substitution" role="alertdialog">
+                <span>
+                  {t('tagSubstitutionQuestion', { player: `#${selectedPlayer.jerseyNumber}` })}
+                  {substitutionError ? <small className="tag-input__substitution-error">{t('tagSubstitutionNotAllowed')}</small> : null}
+                </span>
+                <div className="tag-input__substitution-options">
+                  {courtPlayers
+                    .filter((entry) => entry.player && !entry.player.isLibero)
+                    .map(({ position, player }) => (
+                      <button key={player!.id} type="button" className="tag-input__substitution-option" onClick={() => handleSubstitutionChoice(player!.id)}>
+                        #{player!.jerseyNumber} <small>P{position}</small>
+                      </button>
+                    ))}
+                </div>
+                <button type="button" className="tag-input__confirm-no" onClick={() => setPendingSubstitution(null)}>
+                  {t('cancel')}
+                </button>
+              </div>
+            ) : pendingPoint ? (
+              <div className="tag-input__confirm" role="alertdialog">
+                <span>{pointSummary(pendingPoint)}</span>
+                {/* The tag was the last recorded action, so the regular undo removes exactly it
+                    (and its undo entry); removing only the touch would leave a stale entry behind. */}
+                <button type="button" className="tag-input__confirm-no" onClick={() => { setPendingPoint(null); onUndo(); }}>
+                  {t('tagUndoTag')}
+                </button>
+                <button type="button" className="tag-input__confirm-yes" onClick={() => { onFinalizeRally(pendingPoint.teamSide, pendingPoint.reason); setPendingPoint(null); }}>
+                  {t('confirm')}
+                </button>
+              </div>
+            ) : (
+              <div className="tag-input__footer">
+                <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(leftTeamSide)}>
+                  {t('pointForTeam', { team: teamName(leftTeamSide) })}
+                </button>
+                <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
+                  {t('undoAction')}
+                </button>
+                <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(rightTeamSide)}>
+                  {t('pointForTeam', { team: teamName(rightTeamSide) })}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

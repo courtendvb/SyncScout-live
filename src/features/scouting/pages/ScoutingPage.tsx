@@ -5,7 +5,8 @@ import { useTranslation } from '@src/i18n';
 import type { TranslationKey } from '@src/i18n';
 import { useAppStore } from '@src/app/store/app-store';
 import { OrientationGuard } from '@src/app/layout/OrientationGuard';
-import type { SkillEvaluation, TeamSide } from '@src/domain/common/enums';
+import type { CourtPosition, SkillEvaluation, TeamSide } from '@src/domain/common/enums';
+import { PlayerRole } from '@src/domain/systems';
 import type { MatchEvent } from '@src/domain/events/types';
 import { getMatchRosterPlayerKey, getMatchTeamSnapshot } from '@src/domain/match';
 import type { QuickEntryPlayer } from '@src/domain/roster/quick-entry';
@@ -121,6 +122,7 @@ import { TagInputPanel } from '../tagging/TagInputPanel';
 import { playConfirmFeedback } from '@src/lib/utils/confirm-feedback';
 import '../scouting-screen.css';
 import '../scouting-simple-input.css';
+import '../scouting-phone.css';
 
 type ManageActionDraft = {
   eventType: DeadBallEventType;
@@ -278,6 +280,32 @@ export function ScoutingPage() {
     mediaQueryList.addEventListener('change', handleChange);
     return () => mediaQueryList.removeEventListener('change', handleChange);
   }, []);
+
+  // Phone held upright: the live header and tag pad switch to their phone layout.
+  const [isSmartphonePortrait, setIsSmartphonePortrait] = useState(() => (
+    typeof window === 'undefined'
+      ? false
+      : window.matchMedia(getLiveScoutingOrientationGuardMediaQuery()).matches
+  ));
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(getLiveScoutingOrientationGuardMediaQuery());
+    const handleChange = () => setIsSmartphonePortrait(mediaQueryList.matches);
+    handleChange();
+    mediaQueryList.addEventListener('change', handleChange);
+    return () => mediaQueryList.removeEventListener('change', handleChange);
+  }, []);
+  const isPhone = isSmartphonePortrait || isSmartphoneLandscape;
+
+  // On a phone the court follows the phone: vertical when held upright,
+  // horizontal in landscape, so it always gets the long side of the screen.
+  useEffect(() => {
+    if (isSmartphonePortrait && courtOrientation === 'horizontal') {
+      setCourtOrientation('vertical');
+    } else if (isSmartphoneLandscape && courtOrientation === 'vertical') {
+      setCourtOrientation('horizontal');
+    }
+  }, [isSmartphonePortrait, isSmartphoneLandscape, courtOrientation, setCourtOrientation]);
 
   useEffect(() => {
     // A vertical court is narrow — the DVW code list, opponent-attack and
@@ -561,7 +589,9 @@ export function ScoutingPage() {
   // A vertical court wants a tall (portrait) viewport, the opposite of what
   // the landscape guard forces — skip it when the user has opted into
   // vertical mode, so the court actually gets the height it needs.
-  const requiresLandscape = isLandscapeRequiredForScoutingStage(activeStage) && courtOrientation !== 'vertical';
+  // Tag input has no court at all, so it works upright on a phone too.
+  const worksInPortrait = courtOrientation === 'vertical' || inputMode === 'tag';
+  const requiresLandscape = isLandscapeRequiredForScoutingStage(activeStage) && !worksInPortrait;
   const liveScoutingOrientationGuardMediaQuery = getLiveScoutingOrientationGuardMediaQuery();
   const usesFixedShell = usesFixedScoutingShell(activeStage);
   const isOperationalStage = isOperationalScoutingStage(activeStage);
@@ -1101,6 +1131,71 @@ export function ScoutingPage() {
     }
     syncCourtStateFromLiveMatch();
     return true;
+  };
+
+  // Tag input with an unknown lineup: a player first seen by jersey number
+  // takes an empty position. The set's starting lineup is completed (the slot
+  // keeps its place through rotations), so replay, rotation and export all
+  // see the player there from the start of the set.
+  const fillEmptyLineupPosition = (teamSide: TeamSide, playerId: string, position: CourtPosition): boolean => {
+    const currentLiveMatch = useScoutingStore.getState().liveMatch;
+    const lineup = currentLiveMatch
+      ? (teamSide === 'home' ? currentLiveMatch.homeActiveLineup : currentLiveMatch.awayActiveLineup)
+      : null;
+    if (!currentLiveMatch || !lineup || lineup.slots.some((slot) => slot.playerId === playerId)) return false;
+    const slotIndex = lineup.slots.findIndex((slot) => slot.courtPosition === position);
+    if (slotIndex < 0 || lineup.slots[slotIndex].playerId) return false;
+
+    const log = currentLiveMatch.eventLog;
+    let setStartIndex = -1;
+    log.forEach((event, index) => {
+      if (event.type === 'set_started' && event.setNumber === currentLiveMatch.currentSetNumber) setStartIndex = index;
+    });
+    const setStarted = log[setStartIndex];
+    if (!setStarted || setStarted.type !== 'set_started') return false;
+    const lineupKey = teamSide === 'home' ? 'homeLineup' : 'awayLineup';
+    const startingLineup = setStarted[lineupKey];
+    const startingSlot = startingLineup.slots[slotIndex];
+    if (!startingSlot || startingSlot.playerId) return false;
+
+    const nextStartingLineup = {
+      ...startingLineup,
+      slots: startingLineup.slots.map((slot, index) => (index === slotIndex ? { ...slot, playerId } : slot)),
+      setterPlayerId: startingLineup.setterPlayerId
+        ?? (startingSlot.tacticalRole === PlayerRole.SETTER ? playerId : undefined),
+      benchPlayerIds: startingLineup.benchPlayerIds?.filter((benchPlayerId) => benchPlayerId !== playerId),
+    };
+    const nextLog = [...log];
+    nextLog[setStartIndex] = { ...setStarted, [lineupKey]: nextStartingLineup };
+    if (!replaceLiveMatchEvents(nextLog)) return false;
+
+    const rebuilt = useScoutingStore.getState().liveMatch;
+    const rebuiltLineup = teamSide === 'home' ? rebuilt?.homeActiveLineup : rebuilt?.awayActiveLineup;
+    if (!rebuiltLineup?.slots.some((slot) => slot.courtPosition === position && slot.playerId === playerId)) {
+      // The slot did not map to that position after replay: keep the log as it was.
+      replaceLiveMatchEvents(log);
+      return false;
+    }
+    syncCourtStateFromLiveMatch();
+    return true;
+  };
+
+  const assignJerseyFromTagInput = async (
+    teamSide: TeamSide,
+    jerseyNumber: number,
+    position: CourtPosition | null,
+  ): Promise<string | null> => {
+    const team = teamSide === 'home' ? homeTeam : awayTeam;
+    let playerId = team.players.find((player) => player.jerseyNumber === jerseyNumber)?.id ?? null;
+    if (!playerId) {
+      const result = await handleAddPlayersToMatch(teamSide, [{ jerseyNumber, isLibero: false }]);
+      playerId = result.addedPlayerIds[0]
+        ?? result.team.players.find((player) => player.jerseyNumber === jerseyNumber)?.id
+        ?? null;
+    }
+    if (!playerId) return null;
+    if (position !== null && !fillEmptyLineupPosition(teamSide, playerId, position)) return null;
+    return playerId;
   };
 
   const handleQuickAddSubstitute = async (entries: QuickEntryPlayer[]): Promise<QuickJerseyEntryOutcome> => {
@@ -1998,11 +2093,143 @@ export function ScoutingPage() {
   const canUndoLeftPoint = leftTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
   const canUndoRightPoint = rightTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
 
+  // Phone header: score first, then the per-team buttons, then set/rally and the
+  // input level. Upright it stacks in rows; in landscape it is a single row.
+  const renderPhoneTeamControls = (side: 'left' | 'right') => {
+    const teamSide = side === 'left' ? leftTeamSide : rightTeamSide;
+    const teamName = side === 'left' ? leftTeamName : rightTeamName;
+    const stats = side === 'left' ? leftTeamCurrentSetStats : rightTeamCurrentSetStats;
+    const controls = [
+      <button
+        key="point"
+        type="button"
+        className="phone-live-header__button phone-live-header__button--point"
+        onClick={() => handleManualPoint(teamSide)}
+        disabled={!canEditLiveScore}
+        aria-label={t('addPointToTeam', { team: teamName })}
+      >
+        +1
+      </button>,
+      isOperationalStage ? (
+        <button
+          key="timeout"
+          type="button"
+          className="phone-live-header__button"
+          onClick={() => openManageActionFor('timeout', teamSide)}
+          disabled={!canEditLiveScore}
+          aria-label={t('recordTimeoutFor', { team: teamName })}
+        >
+          {t('timeoutShort')} {stats.timeouts}
+        </button>
+      ) : null,
+      isOperationalStage ? (
+        <button
+          key="substitution"
+          type="button"
+          className="phone-live-header__button"
+          onClick={() => openManageActionFor('substitution', teamSide)}
+          disabled={!canEditLiveScore}
+          aria-label={t('recordSubstitutionFor', { team: teamName })}
+        >
+          {t('substitutionShort')} {stats.substitutions}
+        </button>
+      ) : null,
+    ];
+    return (
+      <div className={`phone-live-header__team-controls phone-live-header__team-controls--${side}`}>
+        {side === 'left' ? controls : [...controls].reverse()}
+      </div>
+    );
+  };
+
+  const renderPhoneHeader = () => {
+    const servingSide = liveMatch?.servingTeam === leftTeamSide ? 'left' : liveMatch?.servingTeam === rightTeamSide ? 'right' : null;
+    return (
+      <section className="scouting-screen__header scouting-screen__phone-header phone-live-header">
+        <div
+          className="phone-live-header__score"
+          aria-label={`${homeTeamName} ${stageSummary.setsWon.home} ${t('sets')} / ${currentHomeScore} ${t('points')}; ${awayTeamName} ${stageSummary.setsWon.away} ${t('sets')} / ${currentAwayScore} ${t('points')}`}
+        >
+          <strong className="phone-live-header__team-name phone-live-header__team-name--left">
+            {servingSide === 'left' ? <span className="phone-live-header__serve" title={t('servingTeam')} /> : null}
+            {leftTeamName}
+          </strong>
+          <span className={`phone-live-header__points scouting-screen__score-number--${leftTeamSide}`} key={`left-${leftPointsScore}`}>{leftPointsScore}</span>
+          <span className="phone-live-header__sets">
+            <small>{t('sets')}</small>
+            {leftSetsWon}-{rightSetsWon}
+          </span>
+          <span className={`phone-live-header__points scouting-screen__score-number--${rightTeamSide}`} key={`right-${rightPointsScore}`}>{rightPointsScore}</span>
+          <strong className="phone-live-header__team-name phone-live-header__team-name--right">
+            {rightTeamName}
+            {servingSide === 'right' ? <span className="phone-live-header__serve" title={t('servingTeam')} /> : null}
+          </strong>
+        </div>
+        {renderPhoneTeamControls('left')}
+        <div className="phone-live-header__center">
+          <button
+            type="button"
+            className="phone-live-header__button"
+            onClick={openManageAction}
+            disabled={!canEditLiveScore}
+            aria-label={t('manageAction')}
+            title={t('manageAction')}
+          >
+            {t('manageActionShort')}
+          </button>
+        </div>
+        {renderPhoneTeamControls('right')}
+        <div className="phone-live-header__status">
+          <span className="phone-live-header__meta">
+            {t('phoneSetRally', { set: currentSetLabel, rally: currentRallyLabel })}
+          </span>
+          {activeStage === 'live_rally' ? (
+            <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
+              {([
+                ['tag', 'inputModeTag', 'inputModeTagHint'],
+                ['court', 'inputModeCourt', 'inputModeCourtHint'],
+                ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
+              ] as const).map(([level, labelKey, hintKey]) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
+                  aria-pressed={inputLevel === level}
+                  title={t(hintKey)}
+                  onClick={() => selectInputLevel(level)}
+                >
+                  {t(labelKey)}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {activeStage === 'live_rally' ? (
+            <button
+              type="button"
+              className="phone-live-header__button"
+              onClick={() => {
+                if (liveMatch) {
+                  toggleDisplaySideSwapped(liveMatch.activeProjectId, liveMatch.currentSetNumber);
+                }
+              }}
+              aria-label={t('swapLiveCourtSides')}
+              title={t('swapLiveCourtSides')}
+            >
+              <span aria-hidden="true">⇄</span>
+            </button>
+          ) : null}
+        </div>
+      </section>
+    );
+  };
+
   const scoutingScreenClassName = [
     'scouting-screen',
     usesFixedShell ? 'scouting-screen--fixed' : 'scouting-screen--flow',
     isOperationalStage ? 'scouting-screen--operational' : '',
     simpleInput ? 'scouting-screen--simple-input' : '',
+    isPhone ? 'scouting-screen--phone' : '',
+    isSmartphonePortrait ? 'scouting-screen--phone-portrait' : '',
   ].filter(Boolean).join(' ');
 
   const isVerticalCourtLiveRally = courtOrientation === 'vertical' && activeStage === 'live_rally';
@@ -2013,13 +2240,14 @@ export function ScoutingPage() {
   // smartphone doesn't use video, and there's no width to spare for it
   // anyway — the panel isn't even rendered in that case (see below).
   const isTagInputLiveRally = inputMode === 'tag' && activeStage === 'live_rally';
-  const isVideoDocked = (isVerticalCourtLiveRally || isTagInputLiveRally) && !videoPanelCollapsed && !isSmartphoneLandscape;
+  const isVideoDocked = (isVerticalCourtLiveRally || isTagInputLiveRally) && !videoPanelCollapsed && !isPhone;
   // The left-column header only earns its keep when the court is the sole
   // occupant of the row (it trades width for extra court height). Once the
   // video panel docks beside the court, that trade stops being worth it —
   // revert to the normal compact top-bar header used everywhere else so the
   // freed-up left column doesn't sit there empty underneath the score.
-  const isVerticalCourtHeaderColumn = isVerticalCourtLiveRally && !isVideoDocked;
+  // A phone always keeps its own header on top.
+  const isVerticalCourtHeaderColumn = isVerticalCourtLiveRally && !isVideoDocked && !isPhone;
 
   const scoutingContainerClassName = [
     'scouting-screen__container',
@@ -2375,6 +2603,7 @@ export function ScoutingPage() {
                   onUndo={handleGroupedUndo}
                   canUndo={canEditLiveScore && groupedUndoAvailability.canApply}
                   onSubstitute={recordSubstitutionBeforeRally}
+                  onAssignJersey={assignJerseyFromTagInput}
                 />
               ) : (
                 (() => {
@@ -2453,7 +2682,7 @@ export function ScoutingPage() {
                   </div>
                 </div>
               )}
-              {!isSmartphoneLandscape && (
+              {!isPhone && (
                 <LiveScoutingVideoPanel
                   ref={liveVideoPanelRef}
                   project={activeProject}
@@ -2535,7 +2764,9 @@ export function ScoutingPage() {
               <p className="scouting-screen__pre-match-description">{t('preMatchConfigMatchLevelDescription')}</p>
             </div>
           </section>
-        ) : activeStage === 'set_setup' ? null : (
+        ) : activeStage === 'set_setup' ? null : isPhone ? (
+          renderPhoneHeader()
+        ) : (
           <section className={scoutingHeaderClassName}>
             <div className={scoutingMatchbarClassName}>
               <div className="scouting-screen__team scouting-screen__team--left">
@@ -2836,7 +3067,7 @@ export function ScoutingPage() {
           <PortraitGuard
             stage={activeStage}
             viewport={{ width: window.innerWidth, height: window.innerHeight }}
-            bypass={courtOrientation === 'vertical'}
+            bypass={worksInPortrait}
           >
             {stageContent}
           </PortraitGuard>

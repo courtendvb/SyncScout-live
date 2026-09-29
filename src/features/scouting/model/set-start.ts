@@ -140,9 +140,9 @@ function validateTeamSetup(team: Team, teamState: TeamSetSetupState): Translatio
   const uniquePlayerIds = new Set(selectedPlayerIds);
   const eligibleLiberoPlayerIds = new Set(getEligibleLiberoPlayerIds(team));
 
-  if (selectedPlayerIds.length !== COURT_POSITIONS.length) {
-    issues.push('setSetupLineupIncomplete');
-  }
+  // Empty positions are allowed: players can be added by jersey number during
+  // the set (tag input), which fills the position in this starting lineup.
+  const isLineupComplete = selectedPlayerIds.length === COURT_POSITIONS.length;
 
   if (selectedPlayerIds.length !== uniquePlayerIds.size) {
     issues.push('setSetupLineupDuplicatePlayers');
@@ -152,7 +152,8 @@ function validateTeamSetup(team: Team, teamState: TeamSetSetupState): Translatio
   const hasSelectedPlayerMissingRole = COURT_POSITIONS.some((position) => (
     Boolean(teamState.slots[position]) && !teamState.tacticalRoles[position]
   ));
-  const hasMissingRequiredRole = REQUIRED_TACTICAL_ROLES.some((role) => !selectedTacticalRoles.includes(role));
+  const hasMissingRequiredRole = isLineupComplete
+    && REQUIRED_TACTICAL_ROLES.some((role) => !selectedTacticalRoles.includes(role));
   const duplicateTacticalRoles = getDuplicateTacticalRoles(teamState);
 
   if (hasSelectedPlayerMissingRole || hasMissingRequiredRole) {
