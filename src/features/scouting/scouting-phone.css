@@ -402,3 +402,14 @@
         font-size: 0.7rem;
     }
 }
+
+/* Landscape phone: the keypad keys share the short height. */
+@media (orientation: landscape) {
+    .scouting-screen--phone .tag-input__keypad-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .scouting-screen--phone .tag-input__keypad-grid button {
+        min-height: 2.6rem;
+    }
+}

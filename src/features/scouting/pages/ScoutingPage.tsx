@@ -5,7 +5,8 @@ import { useTranslation } from '@src/i18n';
 import type { TranslationKey } from '@src/i18n';
 import { useAppStore } from '@src/app/store/app-store';
 import { OrientationGuard } from '@src/app/layout/OrientationGuard';
-import type { SkillEvaluation, TeamSide } from '@src/domain/common/enums';
+import type { CourtPosition, SkillEvaluation, TeamSide } from '@src/domain/common/enums';
+import { PlayerRole } from '@src/domain/systems';
 import type { MatchEvent } from '@src/domain/events/types';
 import { getMatchRosterPlayerKey, getMatchTeamSnapshot } from '@src/domain/match';
 import type { QuickEntryPlayer } from '@src/domain/roster/quick-entry';
@@ -1130,6 +1131,71 @@ export function ScoutingPage() {
     }
     syncCourtStateFromLiveMatch();
     return true;
+  };
+
+  // Tag input with an unknown lineup: a player first seen by jersey number
+  // takes an empty position. The set's starting lineup is completed (the slot
+  // keeps its place through rotations), so replay, rotation and export all
+  // see the player there from the start of the set.
+  const fillEmptyLineupPosition = (teamSide: TeamSide, playerId: string, position: CourtPosition): boolean => {
+    const currentLiveMatch = useScoutingStore.getState().liveMatch;
+    const lineup = currentLiveMatch
+      ? (teamSide === 'home' ? currentLiveMatch.homeActiveLineup : currentLiveMatch.awayActiveLineup)
+      : null;
+    if (!currentLiveMatch || !lineup || lineup.slots.some((slot) => slot.playerId === playerId)) return false;
+    const slotIndex = lineup.slots.findIndex((slot) => slot.courtPosition === position);
+    if (slotIndex < 0 || lineup.slots[slotIndex].playerId) return false;
+
+    const log = currentLiveMatch.eventLog;
+    let setStartIndex = -1;
+    log.forEach((event, index) => {
+      if (event.type === 'set_started' && event.setNumber === currentLiveMatch.currentSetNumber) setStartIndex = index;
+    });
+    const setStarted = log[setStartIndex];
+    if (!setStarted || setStarted.type !== 'set_started') return false;
+    const lineupKey = teamSide === 'home' ? 'homeLineup' : 'awayLineup';
+    const startingLineup = setStarted[lineupKey];
+    const startingSlot = startingLineup.slots[slotIndex];
+    if (!startingSlot || startingSlot.playerId) return false;
+
+    const nextStartingLineup = {
+      ...startingLineup,
+      slots: startingLineup.slots.map((slot, index) => (index === slotIndex ? { ...slot, playerId } : slot)),
+      setterPlayerId: startingLineup.setterPlayerId
+        ?? (startingSlot.tacticalRole === PlayerRole.SETTER ? playerId : undefined),
+      benchPlayerIds: startingLineup.benchPlayerIds?.filter((benchPlayerId) => benchPlayerId !== playerId),
+    };
+    const nextLog = [...log];
+    nextLog[setStartIndex] = { ...setStarted, [lineupKey]: nextStartingLineup };
+    if (!replaceLiveMatchEvents(nextLog)) return false;
+
+    const rebuilt = useScoutingStore.getState().liveMatch;
+    const rebuiltLineup = teamSide === 'home' ? rebuilt?.homeActiveLineup : rebuilt?.awayActiveLineup;
+    if (!rebuiltLineup?.slots.some((slot) => slot.courtPosition === position && slot.playerId === playerId)) {
+      // The slot did not map to that position after replay: keep the log as it was.
+      replaceLiveMatchEvents(log);
+      return false;
+    }
+    syncCourtStateFromLiveMatch();
+    return true;
+  };
+
+  const assignJerseyFromTagInput = async (
+    teamSide: TeamSide,
+    jerseyNumber: number,
+    position: CourtPosition | null,
+  ): Promise<string | null> => {
+    const team = teamSide === 'home' ? homeTeam : awayTeam;
+    let playerId = team.players.find((player) => player.jerseyNumber === jerseyNumber)?.id ?? null;
+    if (!playerId) {
+      const result = await handleAddPlayersToMatch(teamSide, [{ jerseyNumber, isLibero: false }]);
+      playerId = result.addedPlayerIds[0]
+        ?? result.team.players.find((player) => player.jerseyNumber === jerseyNumber)?.id
+        ?? null;
+    }
+    if (!playerId) return null;
+    if (position !== null && !fillEmptyLineupPosition(teamSide, playerId, position)) return null;
+    return playerId;
   };
 
   const handleQuickAddSubstitute = async (entries: QuickEntryPlayer[]): Promise<QuickJerseyEntryOutcome> => {
@@ -2537,6 +2603,7 @@ export function ScoutingPage() {
                   onUndo={handleGroupedUndo}
                   canUndo={canEditLiveScore && groupedUndoAvailability.canApply}
                   onSubstitute={recordSubstitutionBeforeRally}
+                  onAssignJersey={assignJerseyFromTagInput}
                 />
               ) : (
                 (() => {
