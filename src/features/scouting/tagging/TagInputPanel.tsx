@@ -186,125 +186,130 @@ export function TagInputPanel({
 
   return (
     <section className="tag-input" aria-label={t('tagInputTitle')}>
-      <div className="tag-input__rally" aria-live="polite">
-        {currentRallyTouches.length === 0 ? (
-          <span className="tag-input__rally-empty">{t('tagRallyEmpty')}</span>
-        ) : currentRallyTouches.map((touch) => {
-          const players = touch.teamSide === 'home' ? homeTeam.players : awayTeam.players;
-          const jersey = players.find((player) => player.id === touch.playerId)?.jerseyNumber;
-          return (
-            <span key={touch.id} className={`tag-input__chip tag-input__chip--${touch.teamSide === leftTeamSide ? 'left' : 'right'}`}>
-              #{jersey} {t(getSkillTranslationKey(touch.skill))} {touch.evaluation ?? ''}
-            </span>
-          );
-        })}
-      </div>
-
-      <div className="tag-input__teams" role="group" aria-label={t('selectTeam')}>
-        {[leftTeamSide, rightTeamSide].map((side) => (
-          <button
-            key={side}
-            type="button"
-            className={`tag-input__team${teamSide === side ? ' is-selected' : ''}`}
-            aria-pressed={teamSide === side}
-            onClick={() => { setTeamOverride(side); setPlayerId(null); }}
-          >
-            {teamName(side)}
-          </button>
-        ))}
-      </div>
-
-      <div className="tag-input__players">
-        <div className="tag-input__court">
-          {courtPlayers.map(({ position, player }) => (player
-            ? renderPlayerButton(player, `P${position}${playerLabel(player) ? ` ${playerLabel(player)}` : ''}`)
-            : <span key={position} className="tag-input__player tag-input__player--empty">P{position}</span>))}
+      {/* Who (team, player) and what (skill, grade, point): side by side on a landscape phone. */}
+      <div className="tag-input__who">
+        <div className="tag-input__rally" aria-live="polite">
+          {currentRallyTouches.length === 0 ? (
+            <span className="tag-input__rally-empty">{t('tagRallyEmpty')}</span>
+          ) : currentRallyTouches.map((touch) => {
+            const players = touch.teamSide === 'home' ? homeTeam.players : awayTeam.players;
+            const jersey = players.find((player) => player.id === touch.playerId)?.jerseyNumber;
+            return (
+              <span key={touch.id} className={`tag-input__chip tag-input__chip--${touch.teamSide === leftTeamSide ? 'left' : 'right'}`}>
+                #{jersey} {t(getSkillTranslationKey(touch.skill))} {touch.evaluation ?? ''}
+              </span>
+            );
+          })}
         </div>
-        <div className="tag-input__extra">
-          {liberos.map((player) => renderPlayerButton(player, t('libero')))}
-          <button type="button" className="tag-input__bench-toggle" aria-expanded={showBench} onClick={() => setShowBench((open) => !open)}>
-            {t('tagBench')}
-          </button>
-        </div>
-        {showBench && <div className="tag-input__bench">{bench.map((player) => renderPlayerButton(player))}</div>}
-      </div>
 
-      <div className="tag-input__skills" role="group" aria-label={t('skill')}>
-        {TAG_SKILLS.map((candidate) => (
-          <button
-            key={candidate}
-            type="button"
-            className={`tag-input__skill${skill === candidate ? ' is-selected' : ''}`}
-            aria-pressed={skill === candidate}
-            onClick={() => setSkillOverride(candidate)}
-          >
-            {t(getSkillTranslationKey(candidate))}
-          </button>
-        ))}
-      </div>
-
-      <div className="tag-input__evals" role="group" aria-label={t('evaluation')}>
-        {EVALUATION_ORDER.map((evaluation) => {
-          const available = evaluations.includes(evaluation);
-          return (
+        <div className="tag-input__teams" role="group" aria-label={t('selectTeam')}>
+          {[leftTeamSide, rightTeamSide].map((side) => (
             <button
-              key={evaluation}
+              key={side}
               type="button"
-              className={`tag-input__eval tag-input__eval--${EVAL_SUFFIX[evaluation].toLowerCase()}`}
-              disabled={!available || !selectedPlayer || Boolean(pendingPoint)}
-              onClick={() => handleEvaluation(evaluation)}
+              className={`tag-input__team${teamSide === side ? ' is-selected' : ''}`}
+              aria-pressed={teamSide === side}
+              onClick={() => { setTeamOverride(side); setPlayerId(null); }}
             >
-              <span className="tag-input__eval-symbol">{evaluation}</span>
-              <span className="tag-input__eval-label">{available ? t(evalShortLabelKey(skill, evaluation)) : ''}</span>
+              {teamName(side)}
             </button>
-          );
-        })}
+          ))}
+        </div>
+
+        <div className="tag-input__players">
+          <div className="tag-input__court">
+            {courtPlayers.map(({ position, player }) => (player
+              ? renderPlayerButton(player, `P${position}${playerLabel(player) ? ` ${playerLabel(player)}` : ''}`)
+              : <span key={position} className="tag-input__player tag-input__player--empty">P{position}</span>))}
+          </div>
+          <div className="tag-input__extra">
+            {liberos.map((player) => renderPlayerButton(player, t('libero')))}
+            <button type="button" className="tag-input__bench-toggle" aria-expanded={showBench} onClick={() => setShowBench((open) => !open)}>
+              {t('tagBench')}
+            </button>
+          </div>
+          {showBench && <div className="tag-input__bench">{bench.map((player) => renderPlayerButton(player))}</div>}
+        </div>
       </div>
 
-      {pendingSubstitution && selectedPlayer ? (
-        <div className="tag-input__confirm tag-input__substitution" role="alertdialog">
-          <span>
-            {t('tagSubstitutionQuestion', { player: `#${selectedPlayer.jerseyNumber}` })}
-            {substitutionError ? <small className="tag-input__substitution-error">{t('tagSubstitutionNotAllowed')}</small> : null}
-          </span>
-          <div className="tag-input__substitution-options">
-            {courtPlayers
-              .filter((entry) => entry.player && !entry.player.isLibero)
-              .map(({ position, player }) => (
-                <button key={player!.id} type="button" className="tag-input__substitution-option" onClick={() => handleSubstitutionChoice(player!.id)}>
-                  #{player!.jerseyNumber} <small>P{position}</small>
-                </button>
-              ))}
+      <div className="tag-input__what">
+        <div className="tag-input__skills" role="group" aria-label={t('skill')}>
+          {TAG_SKILLS.map((candidate) => (
+            <button
+              key={candidate}
+              type="button"
+              className={`tag-input__skill${skill === candidate ? ' is-selected' : ''}`}
+              aria-pressed={skill === candidate}
+              onClick={() => setSkillOverride(candidate)}
+            >
+              {t(getSkillTranslationKey(candidate))}
+            </button>
+          ))}
+        </div>
+
+        <div className="tag-input__evals" role="group" aria-label={t('evaluation')}>
+          {EVALUATION_ORDER.map((evaluation) => {
+            const available = evaluations.includes(evaluation);
+            return (
+              <button
+                key={evaluation}
+                type="button"
+                className={`tag-input__eval tag-input__eval--${EVAL_SUFFIX[evaluation].toLowerCase()}`}
+                disabled={!available || !selectedPlayer || Boolean(pendingPoint)}
+                onClick={() => handleEvaluation(evaluation)}
+              >
+                <span className="tag-input__eval-symbol">{evaluation}</span>
+                <span className="tag-input__eval-label">{available ? t(evalShortLabelKey(skill, evaluation)) : ''}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {pendingSubstitution && selectedPlayer ? (
+          <div className="tag-input__confirm tag-input__substitution" role="alertdialog">
+            <span>
+              {t('tagSubstitutionQuestion', { player: `#${selectedPlayer.jerseyNumber}` })}
+              {substitutionError ? <small className="tag-input__substitution-error">{t('tagSubstitutionNotAllowed')}</small> : null}
+            </span>
+            <div className="tag-input__substitution-options">
+              {courtPlayers
+                .filter((entry) => entry.player && !entry.player.isLibero)
+                .map(({ position, player }) => (
+                  <button key={player!.id} type="button" className="tag-input__substitution-option" onClick={() => handleSubstitutionChoice(player!.id)}>
+                    #{player!.jerseyNumber} <small>P{position}</small>
+                  </button>
+                ))}
+            </div>
+            <button type="button" className="tag-input__confirm-no" onClick={() => setPendingSubstitution(null)}>
+              {t('cancel')}
+            </button>
           </div>
-          <button type="button" className="tag-input__confirm-no" onClick={() => setPendingSubstitution(null)}>
-            {t('cancel')}
-          </button>
-        </div>
-      ) : pendingPoint ? (
-        <div className="tag-input__confirm" role="alertdialog">
-          <span>{pointSummary(pendingPoint)}</span>
-          {/* The tag was the last recorded action, so the regular undo removes exactly it
-              (and its undo entry); removing only the touch would leave a stale entry behind. */}
-          <button type="button" className="tag-input__confirm-no" onClick={() => { setPendingPoint(null); onUndo(); }}>
-            {t('tagUndoTag')}
-          </button>
-          <button type="button" className="tag-input__confirm-yes" onClick={() => { onFinalizeRally(pendingPoint.teamSide, pendingPoint.reason); setPendingPoint(null); }}>
-            {t('confirm')}
-          </button>
-        </div>
-      ) : (
-        <div className="tag-input__footer">
-          <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(leftTeamSide)}>
-            {t('pointForTeam', { team: teamName(leftTeamSide) })}
-          </button>
-          <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
-            {t('undoAction')}
-          </button>
-          <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(rightTeamSide)}>
-            {t('pointForTeam', { team: teamName(rightTeamSide) })}
-          </button>
-        </div>
-      )}
+        ) : pendingPoint ? (
+          <div className="tag-input__confirm" role="alertdialog">
+            <span>{pointSummary(pendingPoint)}</span>
+            {/* The tag was the last recorded action, so the regular undo removes exactly it
+                (and its undo entry); removing only the touch would leave a stale entry behind. */}
+            <button type="button" className="tag-input__confirm-no" onClick={() => { setPendingPoint(null); onUndo(); }}>
+              {t('tagUndoTag')}
+            </button>
+            <button type="button" className="tag-input__confirm-yes" onClick={() => { onFinalizeRally(pendingPoint.teamSide, pendingPoint.reason); setPendingPoint(null); }}>
+              {t('confirm')}
+            </button>
+          </div>
+        ) : (
+          <div className="tag-input__footer">
+            <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(leftTeamSide)}>
+              {t('pointForTeam', { team: teamName(leftTeamSide) })}
+            </button>
+            <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
+              {t('undoAction')}
+            </button>
+            <button type="button" className="tag-input__point" onClick={() => onFinalizeRally(rightTeamSide)}>
+              {t('pointForTeam', { team: teamName(rightTeamSide) })}
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

@@ -10,7 +10,7 @@ export const en = {
   scoutingLandscapeRequired: 'Scouting requires landscape orientation for the live operational workflow.',
   rotateDeviceToContinueScouting: 'Rotate to landscape to continue scouting.',
   rotateForLiveScouting: 'Rotate your phone to landscape for live scouting.',
-  smartphoneExperienceLimited: 'OpenVolleyScout is optimized for large screens. It works on smartphones, but the experience is limited.',
+  smartphoneExperienceLimited: 'You can scout on a smartphone too. The court turns with the phone (vertical upright, horizontal in landscape); for the quickest input, hold it upright and use tag input.',
   newMatch: 'New Match',
   home: 'Home',
   match: 'Match',
@@ -1516,4 +1516,6 @@ export const en = {
   backupReminderNever: "No backup yet.",
   backupReminderDays: "Last backup: {{days}} days ago.",
   backupReminderHint: "Matches live only on this device; export all matches as .ovs and keep the file somewhere else (Files, cloud).",
+  manageActionShort: "More",
+  phoneSetRally: "Set {{set}} · Rally {{rally}}",
 };

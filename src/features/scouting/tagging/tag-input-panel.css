@@ -6,8 +6,9 @@
     height: 100%;
     min-height: 0;
     display: grid;
-    grid-template-rows: auto;
-    grid-auto-rows: auto;
+    /* max-content: when the pad is short it scrolls; auto rows would shrink
+       the player grid to nothing and let the rows below cover it. */
+    grid-auto-rows: max-content;
     align-content: start;
     gap: 0.5rem;
     padding: 0.5rem;
@@ -37,6 +38,12 @@
     border-color: var(--color-primary, #4b61d1);
     background: var(--color-primary, #4b61d1);
     color: #fff;
+}
+
+/* Grouping only; the phone layout turns these into two columns. */
+.tag-input__who,
+.tag-input__what {
+    display: contents;
 }
 
 /* Tags of the current rally */

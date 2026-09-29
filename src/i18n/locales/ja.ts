@@ -10,7 +10,7 @@ export const ja = {
   scoutingLandscapeRequired: "ライブ入力は横向きの画面で行います。",
   rotateDeviceToContinueScouting: "横向きにするとスカウティングを続けられます。",
   rotateForLiveScouting: "ライブ入力はスマートフォンを横向きにしてください。",
-  smartphoneExperienceLimited: "SyncScout Live は大きな画面向けに作られています。スマートフォンでも動きますが、使い勝手は限られます。",
+  smartphoneExperienceLimited: "スマートフォンでもスカウティングできます。コートは端末の向きに合わせて縦・横が切り替わります。片手で素早く入力するなら、縦向きでタグ入力がおすすめです。",
   newMatch: "新しい試合",
   home: "ホーム",
   match: "試合",
@@ -1495,4 +1495,6 @@ export const ja = {
   backupReminderNever: "まだ一度もバックアップしていません。",
   backupReminderDays: "最後のバックアップは {{days}} 日前です。",
   backupReminderHint: "試合データはこの端末の中にしかないため、全試合を .ovs で書き出して別の場所（ファイル・クラウドなど）に保存してください。",
+  manageActionShort: "その他",
+  phoneSetRally: "第 {{set}} セット · ラリー {{rally}}",
 };

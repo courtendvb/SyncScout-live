@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from '@src/i18n';
 
-const SMARTPHONE_WARNING_DISMISSED_KEY = 'openvolleyscout.smartphoneWarningDismissed';
+// New key: the message became a tip for phone scouting, so it is shown once more.
+const SMARTPHONE_WARNING_DISMISSED_KEY = 'syncscout-live.smartphoneTipDismissed';
 
 export function SmartphoneExperienceWarning() {
   const { t } = useTranslation();
