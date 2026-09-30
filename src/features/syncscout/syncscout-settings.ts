@@ -1,21 +1,34 @@
 /**
- * Where "Send to SyncScout" uploads matches. Each team enters its own
- * SyncScout (Supabase) project once on the Settings page; nothing is built in,
- * so a public build never writes into someone else's database.
+ * SyncScout (https://syncscout.courtend.net) keeps every team's matches in one
+ * Supabase project. Its address and public "anon" key come from the build
+ * (VITE_SYNCSCOUT_SUPABASE_URL / VITE_SYNCSCOUT_ANON_KEY, set as GitHub Actions
+ * variables for the Pages deploy), so users never type them. Writing a match
+ * needs the team's login (team ID + passcode), exactly like the SyncScout viewer.
  */
-export interface SyncScoutSettings {
-  /** e.g. https://abcdefgh.supabase.co */
-  supabaseUrl: string;
-  /** The project's public "anon" key (the same one the SyncScout viewer uses). */
-  anonKey: string;
-  /** SyncScout viewer page, e.g. https://example.github.io/viewer/ (optional). */
-  viewerUrl: string;
+export const SYNCSCOUT_SUPABASE_URL = (import.meta.env.VITE_SYNCSCOUT_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
+export const SYNCSCOUT_ANON_KEY = (import.meta.env.VITE_SYNCSCOUT_ANON_KEY ?? '').trim();
+export const SYNCSCOUT_VIEWER_URL = 'https://app.syncscout.courtend.net/';
+export const SYNCSCOUT_SITE_URL = 'https://syncscout.courtend.net/';
+
+/** False in a build made without the SyncScout variables: sending is then unavailable. */
+export function isSyncScoutAvailable(): boolean {
+  return /^https:\/\/.+/.test(SYNCSCOUT_SUPABASE_URL) && SYNCSCOUT_ANON_KEY.length > 0;
 }
 
-const SETTINGS_KEY = 'syncscout-live.syncscout';
-const LAST_CATEGORY_KEY = 'syncscout-live.syncscout.lastCategory';
+/** A team login from SyncScout's team-login function. */
+export interface SyncScoutAuth {
+  token: string;
+  teamId: number;
+  teamCode: string;
+  teamName: string;
+  slug: string;
+  /** Epoch ms; a little before the token itself expires. */
+  expiresAt: number;
+}
 
-const EMPTY_SETTINGS: SyncScoutSettings = { supabaseUrl: '', anonKey: '', viewerUrl: '' };
+const AUTH_KEY = 'syncscout-live.syncscout.auth';
+const LAST_SLUG_KEY = 'syncscout-live.syncscout.lastSlug';
+const LAST_CATEGORY_KEY = 'syncscout-live.syncscout.lastCategory';
 
 function readStorage(key: string): string | null {
   try {
@@ -29,30 +42,42 @@ function writeStorage(key: string, value: string): void {
   try {
     window.localStorage.setItem(key, value);
   } catch {
-    // Storage unavailable (private mode): settings just are not remembered.
+    // Storage unavailable (private mode): the value just is not remembered.
   }
 }
 
-export function loadSyncScoutSettings(): SyncScoutSettings {
-  const raw = readStorage(SETTINGS_KEY);
-  if (!raw) return EMPTY_SETTINGS;
+function removeStorage(key: string): void {
   try {
-    return { ...EMPTY_SETTINGS, ...(JSON.parse(raw) as Partial<SyncScoutSettings>) };
+    window.localStorage.removeItem(key);
   } catch {
-    return EMPTY_SETTINGS;
+    // ignore
   }
 }
 
-export function saveSyncScoutSettings(settings: SyncScoutSettings): void {
-  writeStorage(SETTINGS_KEY, JSON.stringify({
-    supabaseUrl: settings.supabaseUrl.trim().replace(/\/+$/, ''),
-    anonKey: settings.anonKey.trim(),
-    viewerUrl: settings.viewerUrl.trim(),
-  }));
+export function loadSyncScoutAuth(): SyncScoutAuth | null {
+  const raw = readStorage(AUTH_KEY);
+  if (!raw) return null;
+  try {
+    const auth = JSON.parse(raw) as SyncScoutAuth;
+    if (!auth.token || !auth.teamId || !(auth.expiresAt > Date.now())) return null;
+    return auth;
+  } catch {
+    return null;
+  }
 }
 
-export function isSyncScoutConfigured(settings: SyncScoutSettings): boolean {
-  return /^https:\/\/.+/.test(settings.supabaseUrl) && settings.anonKey.length > 0;
+export function saveSyncScoutAuth(auth: SyncScoutAuth): void {
+  writeStorage(AUTH_KEY, JSON.stringify(auth));
+  writeStorage(LAST_SLUG_KEY, auth.slug);
+}
+
+export function clearSyncScoutAuth(): void {
+  removeStorage(AUTH_KEY);
+}
+
+/** Team ID of the last login, to prefill the login form. */
+export function loadLastSyncScoutSlug(): string {
+  return readStorage(LAST_SLUG_KEY) ?? '';
 }
 
 export function loadLastSyncScoutCategory(): string {

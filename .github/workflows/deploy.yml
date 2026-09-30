@@ -37,6 +37,12 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # SyncScout's Supabase address and public anon key (Settings →
+          # Secrets and variables → Actions → Variables). Without them the
+          # app builds fine; only "Send to SyncScout" is unavailable.
+          VITE_SYNCSCOUT_SUPABASE_URL: ${{ vars.SYNCSCOUT_SUPABASE_URL }}
+          VITE_SYNCSCOUT_ANON_KEY: ${{ vars.SYNCSCOUT_ANON_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

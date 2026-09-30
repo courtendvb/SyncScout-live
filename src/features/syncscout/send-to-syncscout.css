@@ -79,3 +79,19 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
+
+.send-syncscout__login {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.send-syncscout__account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
