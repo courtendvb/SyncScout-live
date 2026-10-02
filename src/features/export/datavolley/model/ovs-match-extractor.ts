@@ -446,7 +446,10 @@ function createTouchCode(input: {
   const skillCode = SKILL_CODE[touch.skill] ?? '?';
   const marker = TEAM_MARKER[touch.teamSide];
   const player = getPlayerById(project, touch.teamSide, touch.playerId);
-  const jersey = input.syntheticJersey ?? (player?.jerseyNumber ? padNumber(player.jerseyNumber) : '$$');
+  // A serve without a known server (beginner input) is written as player 00:
+  // viewers such as SyncScout build each rally from its serve row and skip "$$".
+  const unknownJersey = touch.skill === 'serve' ? '00' : '$$';
+  const jersey = input.syntheticJersey ?? (player?.jerseyNumber ? padNumber(player.jerseyNumber) : unknownJersey);
 
   if (!input.synthetic && (!touch.playerId || !player?.jerseyNumber)) {
     diagnostics.push(createDataVolleyExportDiagnostic({
@@ -683,6 +686,7 @@ function createScoutRows(project: MatchProject, diagnostics: DataVolleyExportDia
       rows.push(createTimedRow({
         code: `${TEAM_MARKER[event.teamSide]}p${padNumber(score.home)}:${padNumber(score.away)}`,
         timestamp: event.createdAt,
+        videoSeconds: event.videoTimeSeconds,
         setNumber: event.setNumber,
         eventId: event.id,
         rallyNumber: event.rallyNumber,

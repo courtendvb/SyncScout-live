@@ -1532,4 +1532,12 @@ export const en = {
   syncScoutSessionExpired: "Your login has expired. Log in again, then send.",
   syncScoutNoAccount: "Not using SyncScout yet?",
   syncScoutAboutLink: "See what SyncScout does",
+  inputModeBasic: "Basic",
+  inputModeBasicHint: "Serve and point winner only. SyncScout then plays the rallies back to back",
+  basicInputServe: "Serve",
+  basicInputNextServe: "Next serve: {{team}}. Tap when the ball is served",
+  basicInputRallyRunning: "Rally in play. Tap the team that wins it",
+  basicInputWhoScored: "Team that scored",
+  basicInputPointFor: "Point",
+  basicInputHint: "The serve and point taps tell SyncScout where each rally starts and ends in the video.",
 };

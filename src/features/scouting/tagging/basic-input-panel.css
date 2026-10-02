@@ -1,0 +1,133 @@
+/*
+  Basic input: two steps per rally (serve, then who scored), with buttons as
+  large as the screen allows so they can be hit without looking.
+*/
+.basic-input {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(5rem, 1fr) minmax(7rem, 1.6fr) auto auto;
+    gap: 0.6rem;
+    padding: 0.6rem;
+    box-sizing: border-box;
+    background: var(--color-surface, #fff);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 14px;
+    overflow: auto;
+}
+
+.basic-input button {
+    font: inherit;
+    border-radius: 16px;
+    border: 2px solid rgba(148, 163, 184, 0.5);
+    background: rgba(248, 250, 252, 0.95);
+    color: var(--color-text-primary, #111827);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.basic-input button:disabled {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.basic-input button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.basic-input__status {
+    margin: 0;
+    min-height: 1.5rem;
+    text-align: center;
+    font-weight: 800;
+    color: var(--color-text-secondary, #5a6477);
+}
+
+.basic-input__serve {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+}
+
+.basic-input .basic-input__serve:not(:disabled) {
+    border-color: var(--color-primary, #4b61d1);
+    background: var(--color-primary, #4b61d1);
+    color: #fff;
+}
+
+.basic-input__serve strong {
+    font-size: 2rem;
+}
+
+.basic-input__serve span {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.basic-input__points {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    min-height: 0;
+}
+
+.basic-input__point {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    padding: 0.5rem;
+    min-width: 0;
+}
+
+.basic-input__point span {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.basic-input__point strong {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.6rem;
+}
+
+/* After the serve, the point buttons are the next thing to press. */
+.basic-input .basic-input__point.is-ready {
+    border-color: #2f9e6a;
+    background: rgba(47, 158, 106, 0.1);
+}
+
+.basic-input__hint {
+    margin: 0;
+    font-size: 0.8rem;
+    text-align: center;
+    color: var(--color-text-secondary, #5a6477);
+}
+
+.basic-input__undo {
+    min-height: 2.9rem;
+    font-weight: 800;
+}
+
+/* Landscape phone: serve on the left, the two teams on the right. */
+@media (orientation: landscape) and (max-height: 560px) {
+    .basic-input {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "status status"
+            "serve points"
+            "hint undo";
+    }
+
+    .basic-input__status { grid-area: status; }
+    .basic-input__serve { grid-area: serve; }
+    .basic-input__points { grid-area: points; }
+    .basic-input__hint { grid-area: hint; align-self: center; }
+    .basic-input__undo { grid-area: undo; }
+}

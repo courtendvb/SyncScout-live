@@ -253,3 +253,27 @@ export function buildPendingTouchesFromParsed(
 
   return touches;
 }
+
+/**
+ * Basic input: the serve of the current rally, by the player in position 1
+ * when the lineup knows them (otherwise no player). Its time marks where the
+ * rally starts in the video.
+ */
+export function createBasicServeTouch(input: {
+  servingTeam: TeamSide;
+  servingLineup: ActiveLineup | null;
+  recordedAtIso: string;
+  recordedAtTime: string;
+}): PendingTouch {
+  return {
+    id: `touch-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    playerId: getServingPlayerId(input.servingLineup, input.servingTeam) || undefined,
+    teamSide: input.servingTeam,
+    skill: 'serve',
+    zone: getDefaultServeZone(input.servingTeam),
+    source: 'explicit',
+    touchOrigin: 'live_scouting',
+    recordedAtTime: input.recordedAtTime,
+    recordedAtIso: input.recordedAtIso,
+  };
+}

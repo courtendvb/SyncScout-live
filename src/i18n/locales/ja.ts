@@ -1511,4 +1511,12 @@ export const ja = {
   syncScoutSessionExpired: "ログインの有効期限が切れました。もう一度ログインしてから送信してください。",
   syncScoutNoAccount: "SyncScout をまだ使っていない場合は：",
   syncScoutAboutLink: "SyncScout について見る",
+  inputModeBasic: "かんたん",
+  inputModeBasicHint: "サーブとどちらの得点かだけを記録。SyncScout でラリーだけを続けて見られます",
+  basicInputServe: "サーブ",
+  basicInputNextServe: "次のサーブ：{{team}}。サーブを打ったら押してください",
+  basicInputRallyRunning: "ラリー中。終わったら得点したチームを押してください",
+  basicInputWhoScored: "得点したチーム",
+  basicInputPointFor: "得点",
+  basicInputHint: "サーブと得点を押した時刻で、SyncScout がラリーの部分だけを再生します。",
 };

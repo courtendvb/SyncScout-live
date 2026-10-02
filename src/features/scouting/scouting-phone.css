@@ -413,3 +413,19 @@
         min-height: 2.6rem;
     }
 }
+
+/* Landscape phone: four input levels share the header row with both teams. */
+@media (orientation: landscape) {
+    .phone-live-header .scouting-screen__input-mode-button {
+        padding: 0 0.4rem;
+        font-size: 0.72rem;
+    }
+
+    .phone-live-header__team-name {
+        min-width: 3.5rem;
+    }
+
+    .phone-live-header__score {
+        gap: 0.3rem;
+    }
+}
