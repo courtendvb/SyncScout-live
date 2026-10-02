@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Team } from '@src/domain/roster/types';
 import type { StartingLineup } from '@src/domain/lineup/types';
 import { useTranslation } from '@src/i18n';
@@ -19,6 +20,9 @@ interface SetSetupStageProps {
     servingTeam: 'home' | 'away';
   }) => void;
   onAddPlayers?: (teamSide: TeamSide, players: QuickEntryPlayer[]) => Promise<AddPlayersResult>;
+  simpleLineup?: boolean;
+  /** Input level switch, so the level (and the lineup screen it brings) is chosen before the set. */
+  inputLevelSwitch?: ReactNode;
 }
 
 export function SetSetupStage({
@@ -30,6 +34,8 @@ export function SetSetupStage({
   onBack,
   onSetStarted,
   onAddPlayers,
+  simpleLineup,
+  inputLevelSwitch,
 }: SetSetupStageProps) {
   const { t } = useTranslation();
   const isNextSetSetup = Boolean(initialSetup);
@@ -51,6 +57,12 @@ export function SetSetupStage({
           </div>
         ) : null}
       </header>
+      {inputLevelSwitch ? (
+        <div className="set-setup-stage__input-level">
+          <span>{t('setSetupInputLevel')}</span>
+          {inputLevelSwitch}
+        </div>
+      ) : null}
       <p className="scouting-screen__pre-match-summary">
         <span className="scouting-screen__pre-match-summary-label">{t('match')}:</span>{' '}
         {matchSummary}
@@ -65,6 +77,8 @@ export function SetSetupStage({
           onBack={onBack}
           onSetStarted={onSetStarted}
           onAddPlayers={onAddPlayers}
+          key={simpleLineup ? 'simple' : 'detailed'}
+          simpleLineup={simpleLineup}
         />
       </div>
     </section>

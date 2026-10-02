@@ -1,5 +1,6 @@
 import type { TeamSide } from '@src/domain/common/enums';
 import type { ActiveLineup } from '@src/domain/lineup/types';
+import type { Player } from '@src/domain/roster/types';
 import type { BallTouch } from '@src/domain/touch/types';
 import { useTranslation } from '@src/i18n';
 import type { PendingTouch } from '../model';
@@ -9,6 +10,8 @@ import './basic-input-panel.css';
 interface BasicInputPanelProps {
   homeName: string;
   awayName: string;
+  homePlayers: Player[];
+  awayPlayers: Player[];
   homeLineup: ActiveLineup | null;
   awayLineup: ActiveLineup | null;
   servingTeam: TeamSide | null;
@@ -29,6 +32,8 @@ interface BasicInputPanelProps {
 export function BasicInputPanel({
   homeName,
   awayName,
+  homePlayers,
+  awayPlayers,
   homeLineup,
   awayLineup,
   servingTeam,
@@ -43,6 +48,12 @@ export function BasicInputPanel({
   const { t } = useTranslation();
   const teamName = (side: TeamSide) => (side === 'home' ? homeName : awayName) || t(side === 'home' ? 'home' : 'away');
   const isRallyRunning = currentRallyTouches.some((touch) => touch.skill === 'serve');
+  // The server is whoever stands in P1 now; it changes by itself as the team rotates.
+  const servingLineup = servingTeam === 'home' ? homeLineup : servingTeam === 'away' ? awayLineup : null;
+  const serverId = servingLineup?.slots.find((slot) => slot.courtPosition === 1)?.playerId;
+  const server = serverId
+    ? (servingTeam === 'home' ? homePlayers : awayPlayers).find((player) => player.id === serverId) ?? null
+    : null;
 
   const recordServe = () => {
     if (!servingTeam || isRallyRunning) return;
@@ -60,7 +71,9 @@ export function BasicInputPanel({
       <p className="basic-input__status" aria-live="polite">
         {isRallyRunning
           ? t('basicInputRallyRunning')
-          : servingTeam ? t('basicInputNextServe', { team: teamName(servingTeam) }) : ''}
+          : servingTeam
+            ? t('basicInputNextServe', { team: server ? `${teamName(servingTeam)} #${server.jerseyNumber}` : teamName(servingTeam) })
+            : ''}
       </p>
 
       <button
@@ -69,7 +82,7 @@ export function BasicInputPanel({
         disabled={!servingTeam || isRallyRunning}
         onClick={recordServe}
       >
-        <strong>{t('basicInputServe')}</strong>
+        <strong>{server ? t('basicInputServeBy', { number: server.jerseyNumber }) : t('basicInputServe')}</strong>
         {servingTeam ? <span>{teamName(servingTeam)}</span> : null}
       </button>
 

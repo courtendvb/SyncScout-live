@@ -8,6 +8,7 @@ import type { TranslationKey } from '@src/i18n';
 import type { NextSetPrefillConfig } from '../model';
 import { useCourtOrientationStore } from '../model/court-orientation-store';
 import { HalfCourtLineup } from './HalfCourtLineup';
+import { SimpleLineupScreen } from './SimpleLineupScreen';
 import { QuickJerseyEntry, type QuickJerseyEntryOutcome } from '@src/components/roster/QuickJerseyEntry';
 import type { QuickEntryPlayer } from '@src/domain/roster/quick-entry';
 import {
@@ -45,6 +46,8 @@ interface SetStartFlowProps {
   }) => void | Promise<void>;
   /** Adds players to the match roster by jersey number; returns the refreshed team. */
   onAddPlayers?: (teamSide: TeamSide, players: QuickEntryPlayer[]) => Promise<AddPlayersResult>;
+  /** Button input (tag / basic): the lineup is entered on a simple court with number buttons. */
+  simpleLineup?: boolean;
 }
 
 export interface AddPlayersResult extends QuickJerseyEntryOutcome {
@@ -718,6 +721,7 @@ export function SetStartFlow({
   onBack,
   onSetStarted,
   onAddPlayers,
+  simpleLineup = false,
 }: SetStartFlowProps) {
   const { t } = useTranslation();
   const [setupState, setSetupState] = useState<SetStartSetupState>(() => (
@@ -732,6 +736,16 @@ export function SetStartFlow({
     away: 1,
   });
   const validation = validateSetStartSetup(setupState, { home: homeTeam, away: awayTeam });
+  const [showDetailedLineup, setShowDetailedLineup] = useState(false);
+  // Simple lineup: an incomplete lineup is asked about once, the second "Next" goes on.
+  const [incompleteAsked, setIncompleteAsked] = useState<Partial<Record<TeamSide, boolean>>>({});
+  const usesSimpleLineup = simpleLineup && !showDetailedLineup;
+  const lineupCount = (teamSide: TeamSide) => COURT_POSITIONS.filter((position) => setupState[teamSide].slots[position]).length;
+  const asksAboutIncompleteLineup = (teamSide: TeamSide) => {
+    if (!usesSimpleLineup || lineupCount(teamSide) === COURT_POSITIONS.length || incompleteAsked[teamSide]) return false;
+    setIncompleteAsked((current) => ({ ...current, [teamSide]: true }));
+    return true;
+  };
 
   const updateTeamState = (
     teamSide: TeamSide,
@@ -947,7 +961,7 @@ export function SetStartFlow({
     setShowValidation(true);
 
     if (currentStep === 'home') {
-      if (validation.homeIssues.length > 0) {
+      if (validation.homeIssues.length > 0 || asksAboutIncompleteLineup('home')) {
         return;
       }
 
@@ -957,7 +971,7 @@ export function SetStartFlow({
     }
 
     if (currentStep === 'away') {
-      if (validation.awayIssues.length > 0) {
+      if (validation.awayIssues.length > 0 || asksAboutIncompleteLineup('away')) {
         return;
       }
 
@@ -1018,7 +1032,35 @@ export function SetStartFlow({
   return (
     <div className="set-start-panel">
       <div className="set-start-panel__stage">
-        {currentStep === 'home' && (
+        {(currentStep === 'home' || currentStep === 'away') && usesSimpleLineup && (() => {
+          const side = currentStep;
+          const team = side === 'home' ? homeTeam : awayTeam;
+          return (
+            <>
+              <SimpleLineupScreen
+                key={side}
+                team={team}
+                teamSide={side}
+                state={setupState[side]}
+                selectedPosition={selectedPositions[side]}
+                notice={teamNotices[side] ? t(teamNotices[side]!.key, teamNotices[side]!.values) : null}
+                incompleteWarning={incompleteAsked[side] && lineupCount(side) < COURT_POSITIONS.length
+                  ? t('simpleLineupIncomplete', { count: lineupCount(side) })
+                  : null}
+                onSelectedPositionChange={(position) => setSelectedPositions((current) => ({ ...current, [side]: position }))}
+                onSlotChange={(position, playerId) => handleSlotChange(side, team, position, playerId)}
+                onSetterChange={(playerId) => handleSetterChange(side, team, playerId)}
+                onLiberoChange={(index, playerId) => handleLiberoChange(side, team, index, playerId)}
+                onRotateClockwise={() => handleRotateClockwise(side, team)}
+                onQuickAddPlayers={onAddPlayers ? (entries) => handleQuickAddPlayers(side, entries) : undefined}
+                onShowDetailed={() => setShowDetailedLineup(true)}
+              />
+              <TeamIssues issues={showValidation ? validation[side === 'home' ? 'homeIssues' : 'awayIssues'] : []} />
+            </>
+          );
+        })()}
+
+        {currentStep === 'home' && !usesSimpleLineup && (
           <TeamSetupScreen
             team={homeTeam}
             teamSide="home"
@@ -1039,7 +1081,7 @@ export function SetStartFlow({
           />
         )}
 
-        {currentStep === 'away' && (
+        {currentStep === 'away' && !usesSimpleLineup && (
           <TeamSetupScreen
             team={awayTeam}
             teamSide="away"

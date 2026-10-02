@@ -2099,6 +2099,30 @@ export function ScoutingPage() {
   const canUndoLeftPoint = leftTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
   const canUndoRightPoint = rightTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
 
+  // Basic / Tags / Court / Detailed: on the live header and on the set-start screen,
+  // so the input level (and with it the lineup screen) is chosen before the set.
+  const renderInputLevelSwitch = () => (
+    <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
+      {([
+        ['basic', 'inputModeBasic', 'inputModeBasicHint'],
+        ['tag', 'inputModeTag', 'inputModeTagHint'],
+        ['court', 'inputModeCourt', 'inputModeCourtHint'],
+        ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
+      ] as const).map(([level, labelKey, hintKey]) => (
+        <button
+          key={level}
+          type="button"
+          className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
+          aria-pressed={inputLevel === level}
+          title={t(hintKey)}
+          onClick={() => selectInputLevel(level)}
+        >
+          {t(labelKey)}
+        </button>
+      ))}
+    </div>
+  );
+
   // Phone header: score first, then the per-team buttons, then set/rally and the
   // input level. Upright it stacks in rows; in landscape it is a single row.
   const renderPhoneTeamControls = (side: 'left' | 'right') => {
@@ -2189,27 +2213,7 @@ export function ScoutingPage() {
           <span className="phone-live-header__meta">
             {t('phoneSetRally', { set: currentSetLabel, rally: currentRallyLabel })}
           </span>
-          {activeStage === 'live_rally' ? (
-            <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
-              {([
-                ['basic', 'inputModeBasic', 'inputModeBasicHint'],
-                ['tag', 'inputModeTag', 'inputModeTagHint'],
-                ['court', 'inputModeCourt', 'inputModeCourtHint'],
-                ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-              ] as const).map(([level, labelKey, hintKey]) => (
-                <button
-                  key={level}
-                  type="button"
-                  className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
-                  aria-pressed={inputLevel === level}
-                  title={t(hintKey)}
-                  onClick={() => selectInputLevel(level)}
-                >
-                  {t(labelKey)}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          {activeStage === 'live_rally' ? renderInputLevelSwitch() : null}
           {activeStage === 'live_rally' ? (
             <button
               type="button"
@@ -2564,6 +2568,8 @@ export function ScoutingPage() {
           onBack={() => setStageOverride(stageSummary.currentStage === 'set_end' ? null : 'pre_match_config')}
           onSetStarted={handleSetStarted}
           onAddPlayers={handleAddPlayersToMatch}
+          simpleLineup={inputMode === 'tag' || inputMode === 'basic'}
+          inputLevelSwitch={renderInputLevelSwitch()}
         />
       )}
 
@@ -2599,6 +2605,8 @@ export function ScoutingPage() {
                 <BasicInputPanel
                   homeName={homeTeamName}
                   awayName={awayTeamName}
+                  homePlayers={homeTeam.players}
+                  awayPlayers={awayTeam.players}
                   homeLineup={liveMatch?.homeActiveLineup ?? null}
                   awayLineup={liveMatch?.awayActiveLineup ?? null}
                   servingTeam={liveMatch?.servingTeam ?? null}
@@ -3001,27 +3009,7 @@ export function ScoutingPage() {
                 <span className="scouting-screen__event-label">{t('currentEvent')}</span>
                 <strong className="scouting-screen__event-value">{currentEventLabel}</strong>
               </div>
-              {activeStage === 'live_rally' ? (
-                <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
-                  {([
-                    ['basic', 'inputModeBasic', 'inputModeBasicHint'],
-                    ['tag', 'inputModeTag', 'inputModeTagHint'],
-                    ['court', 'inputModeCourt', 'inputModeCourtHint'],
-                    ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-                  ] as const).map(([level, labelKey, hintKey]) => (
-                    <button
-                      key={level}
-                      type="button"
-                      className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
-                      aria-pressed={inputLevel === level}
-                      title={t(hintKey)}
-                      onClick={() => selectInputLevel(level)}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              {activeStage === 'live_rally' ? renderInputLevelSwitch() : null}
             </div>
 
             {activeStage === 'live_rally' && !simpleInput ? (
