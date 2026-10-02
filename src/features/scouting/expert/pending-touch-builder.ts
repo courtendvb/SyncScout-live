@@ -273,6 +273,7 @@ export function createBasicServeTouch(input: {
     zone: getDefaultServeZone(input.servingTeam),
     source: 'explicit',
     touchOrigin: 'live_scouting',
+    withoutZones: true,
     recordedAtTime: input.recordedAtTime,
     recordedAtIso: input.recordedAtIso,
   };

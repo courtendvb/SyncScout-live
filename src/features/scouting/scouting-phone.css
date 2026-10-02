@@ -228,25 +228,13 @@
     min-height: 1.8rem;
 }
 
-.scouting-screen--phone .tag-input__team {
-    min-height: 2.75rem;
+.scouting-screen--phone .tag-input__player,
+.scouting-screen--phone .tag-input__bench-toggle {
+    min-height: 2.9rem;
 }
 
-/* Upright: court grid on top, liberos and bench on one row under it. */
-.scouting-screen--phone-portrait .tag-input__players {
-    grid-template-columns: minmax(0, 1fr);
-}
-
-.scouting-screen--phone-portrait .tag-input__extra {
-    flex-direction: row;
-}
-
-.scouting-screen--phone-portrait .tag-input__extra > * {
-    flex: 1 1 0;
-}
-
-.scouting-screen--phone .tag-input__player {
-    min-height: 3.1rem;
+.scouting-screen--phone .tag-input__picker-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .scouting-screen--phone .tag-input__skills {
@@ -300,10 +288,6 @@
         grid-auto-rows: max-content;
         gap: 0.4rem;
         min-width: 0;
-    }
-
-    .scouting-screen--phone .tag-input__players {
-        grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
     }
 
     .scouting-screen--phone .tag-input__player {
@@ -403,14 +387,15 @@
     }
 }
 
-/* Landscape phone: the keypad keys share the short height. */
+/* Landscape phone: the number grid shares the short height. */
 @media (orientation: landscape) {
-    .scouting-screen--phone .tag-input__keypad-grid {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
+    .scouting-screen--phone .tag-input__picker-grid {
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        max-height: 10rem;
     }
 
-    .scouting-screen--phone .tag-input__keypad-grid button {
-        min-height: 2.6rem;
+    .scouting-screen--phone .tag-input__picker-grid button {
+        min-height: 2.4rem;
     }
 }
 
@@ -428,4 +413,62 @@
     .phone-live-header__score {
         gap: 0.3rem;
     }
+}
+
+/* Upright phone, court tag pad: everything down to the point buttons fits without scrolling. */
+.scouting-screen--phone-portrait .tag-input {
+    gap: 0.3rem;
+    padding: 0.3rem;
+}
+
+.scouting-screen--phone-portrait .tag-input__rally:has(.tag-input__rally-empty) {
+    display: none;
+}
+
+.scouting-screen--phone-portrait .tag-court {
+    padding: 0.25rem;
+}
+
+.scouting-screen--phone-portrait .tag-court__half {
+    gap: 0.25rem;
+    padding: 0.25rem;
+}
+
+.scouting-screen--phone-portrait .tag-court__player {
+    min-height: 2.75rem;
+}
+
+.scouting-screen--phone-portrait .tag-court__player strong {
+    font-size: 1.2rem;
+}
+
+.scouting-screen--phone-portrait .tag-court__extras {
+    flex-wrap: nowrap;
+}
+
+.scouting-screen--phone-portrait .tag-court__team-name {
+    flex: 1 1 auto;
+}
+
+.scouting-screen--phone-portrait .tag-court__extras > .tag-input__player,
+.scouting-screen--phone-portrait .tag-court__extras > .tag-input__bench-toggle {
+    flex: 0 0 auto;
+    min-height: 2.5rem;
+    padding: 0 0.75rem;
+}
+
+.scouting-screen--phone-portrait .tag-input__skill {
+    min-height: 2.5rem;
+}
+
+.scouting-screen--phone-portrait .tag-input__detail {
+    min-height: 2.2rem;
+}
+
+.scouting-screen--phone-portrait .tag-input__eval {
+    min-height: 3rem;
+}
+
+.scouting-screen--phone-portrait .tag-input__eval-symbol {
+    font-size: 1.35rem;
 }

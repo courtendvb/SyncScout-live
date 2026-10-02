@@ -77,6 +77,7 @@ export interface OvsTouchRow {
   startZoneCode?: string;
   endZoneCode?: string;
   numBlockers?: NumBlockers;
+  withoutZones?: boolean;
   source?: TouchSource;
   touchOrigin?: TouchOrigin;
   requiredExplicitInput?: boolean;

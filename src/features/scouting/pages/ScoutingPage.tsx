@@ -1366,6 +1366,8 @@ export function ScoutingPage() {
       combinationCode: draft.combinationCode,
       setterCallCode: draft.setterCallCode,
       customCode: draft.customCode,
+      numBlockers: draft.numBlockers,
+      ...(draft.withoutZones ? { withoutZones: true } : {}),
       homeSetterPosition,
       awaySetterPosition,
       // draft.zone is the zone where the user snapped the ball.
@@ -2618,6 +2620,7 @@ export function ScoutingPage() {
                   currentRallyTouches={liveMatch?.currentRallyTouches ?? []}
                   leftTeamSide={leftTeamSide}
                   rightTeamSide={rightTeamSide}
+                  vertical={courtOrientation === 'vertical'}
                   confirmPoint={confirmPointAssignment}
                   onCommitTouches={handleTouchesCommitted}
                   onFinalizeRally={finalizeRally}

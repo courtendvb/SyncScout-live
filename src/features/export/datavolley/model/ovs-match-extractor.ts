@@ -400,6 +400,9 @@ function getZoneFromReference(input: {
 }
 
 function getTouchStartEndZones(touch: BallTouch): { startZone?: string; endZone?: string; endSubzone?: string } {
+  if (touch.withoutZones) {
+    return {};
+  }
   const serveDetails = touch.advancedDetails?.serve;
   const attackDetails = touch.advancedDetails?.attack;
   const setDetails = touch.advancedDetails?.set;
@@ -513,8 +516,10 @@ function createTouchCode(input: {
   const endZone = sanitizeCodeSegment(zones.endZone, 1);
   const endSubzone = sanitizeCodeSegment(zones.endSubzone, 1);
   const customCode = cleanField(touch.customCode).replace(/[;\r\n]+/g, '').slice(0, 12);
+  // Column 14 is the number of blockers (attacks only); 13 and 15 stay unset.
+  const blockers = touch.skill === 'attack' && touch.numBlockers !== undefined ? String(touch.numBlockers) : '~';
 
-  return `${marker}${jersey}${skillCode}${skillType}${evaluation}${actionCode}${setType}${startZone}${endZone}${endSubzone}~~~${customCode}`;
+  return `${marker}${jersey}${skillCode}${skillType}${evaluation}${actionCode}${setType}${startZone}${endZone}${endSubzone}~${blockers}~${customCode}`;
 }
 
 function createSyntheticTouch(base: BallTouch, input: {

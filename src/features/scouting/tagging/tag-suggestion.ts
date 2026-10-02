@@ -62,14 +62,20 @@ export function suggestNextTag(input: {
   }
 }
 
-/** DataVolley code for one tagged touch, e.g. "*07A#" (ball type left out). */
+/**
+ * DataVolley code for one tagged touch, e.g. "*07A#", or with the optional
+ * details "*07AQK1#" (ball type Q, combination K1). Zones are never tagged.
+ */
 export function buildTagCode(input: {
   teamSide: TeamSide;
   jerseyNumber: number;
   skill: SkillType;
   evaluation: SkillEvaluation;
+  ballType?: string | null;
+  combination?: string | null;
 }): string {
   const team = input.teamSide === 'home' ? '*' : 'a';
   const jersey = String(input.jerseyNumber).padStart(2, '0');
-  return `${team}${jersey}${SKILL_LETTER[input.skill] ?? 'A'}${input.evaluation}`;
+  const combination = input.skill === 'attack' || input.skill === 'set' ? input.combination ?? '' : '';
+  return `${team}${jersey}${SKILL_LETTER[input.skill] ?? 'A'}${input.ballType ?? ''}${combination}${input.evaluation}`;
 }

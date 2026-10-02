@@ -1440,7 +1440,6 @@ export const en = {
   inputModeTag: "Tags",
   inputModeToggle: "Switch input method",
   tagRallyEmpty: "Tap player → evaluation to tag (serve: evaluation only)",
-  tagBench: "Bench",
   tagUndoTag: "Undo tag",
   inputModeDetailed: "Detailed",
   inputModeTagHint: "Buttons only (player → evaluation). For beginners",
@@ -1504,7 +1503,7 @@ export const en = {
   backupReminderHint: "Matches live only on this device; export all matches as .ovs and keep the file somewhere else (Files, cloud).",
   manageActionShort: "More",
   phoneSetRally: "Set {{set}} · Rally {{rally}}",
-  setSetupLineupCanStayEmpty: "You can start with empty positions. During the set, entering a jersey number in tag input adds that player to the team and fills the position.",
+  setSetupLineupCanStayEmpty: "You can start with empty positions. During the set, picking the jersey number of an empty position in tag input adds that player to the team and fills the position.",
   tagJerseyButton: "Jersey #",
   tagJerseyPrompt: "{{team}} jersey number",
   tagJerseyPromptPosition: "{{team}} {{position}} jersey number",
@@ -1540,4 +1539,6 @@ export const en = {
   basicInputWhoScored: "Team that scored",
   basicInputPointFor: "Point",
   basicInputHint: "The serve and point taps tell SyncScout where each rally starts and ends in the video.",
+  tagBenchAndNumbers: "Bench / #",
+  tagDetails: "Details (optional)",
 };
