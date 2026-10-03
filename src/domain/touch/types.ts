@@ -56,6 +56,8 @@ export interface BallTouch {
   startZoneCode?: string;
   endZoneCode?: string;
   numBlockers?: NumBlockers;
+  /** Recorded with buttons only (tag / basic input): no zones were entered, none are exported. */
+  withoutZones?: boolean;
   advancedDetails?: AdvancedTouchDetails;
   source?: TouchSource;
   touchOrigin?: TouchOrigin;

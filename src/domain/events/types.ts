@@ -47,6 +47,8 @@ export type MatchEvent =
       teamSide: TeamSide;
       reason?: string;
       skipRotation?: boolean;
+      /** Video position when the point was recorded while a video was open. */
+      videoTimeSeconds?: number;
     }
   | {
       id: string;

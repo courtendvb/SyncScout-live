@@ -1,0 +1,219 @@
+/* Starting lineup for button input: court of six positions plus a number grid. */
+.simple-lineup {
+    display: grid;
+    gap: 0.75rem;
+    max-width: 44rem;
+    margin: 0 auto;
+}
+
+.simple-lineup button {
+    font: inherit;
+    border-radius: 12px;
+    border: 2px solid rgba(148, 163, 184, 0.5);
+    background: rgba(248, 250, 252, 0.95);
+    color: var(--color-text-primary, #111827);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.simple-lineup button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.simple-lineup__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.simple-lineup__kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-text-secondary, #5a6477);
+}
+
+.simple-lineup__title {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.simple-lineup__count {
+    font-weight: 800;
+    color: var(--color-primary, #4b61d1);
+}
+
+.simple-lineup__hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary, #5a6477);
+}
+
+.simple-lineup__court-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+.simple-lineup__court {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0.4rem;
+    padding-top: 0.9rem;
+    position: relative;
+    border-radius: 12px;
+    background: #2f5fd1;
+}
+
+.simple-lineup__net {
+    position: absolute;
+    top: 0.3rem;
+    left: 0.4rem;
+    right: 0.4rem;
+    height: 0.3rem;
+    background: repeating-linear-gradient(90deg, #fff 0 4px, transparent 4px 8px);
+}
+
+.simple-lineup .simple-lineup__slot {
+    min-height: 3.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px dashed rgba(255, 255, 255, 0.9);
+    color: #fff;
+}
+
+.simple-lineup .simple-lineup__slot.is-filled {
+    background: #fff;
+    border-style: solid;
+    border-color: #fff;
+    color: var(--color-text-primary, #111827);
+}
+
+.simple-lineup .simple-lineup__slot.is-selected {
+    border: 3px solid #facc15;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45);
+}
+
+.simple-lineup__slot strong {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.simple-lineup__slot span {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.simple-lineup__rotate {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.5rem;
+    font-size: 1.4rem;
+}
+
+.simple-lineup__rotate small {
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.simple-lineup__liberos,
+.simple-lineup__setter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.simple-lineup__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2.5rem;
+    padding: 0 0.8rem;
+    border-radius: 999px;
+    border: 2px solid rgba(148, 163, 184, 0.5);
+    background: rgba(248, 250, 252, 0.95);
+    font-weight: 800;
+}
+
+.simple-lineup__chip.is-libero {
+    border-color: #f59e0b;
+}
+
+.simple-lineup .simple-lineup__chip.is-selected {
+    border-color: var(--color-primary, #4b61d1);
+    background: var(--color-primary, #4b61d1);
+    color: #fff;
+}
+
+.simple-lineup__picker {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.simple-lineup__picker-title {
+    margin: 0;
+    font-weight: 800;
+}
+
+.simple-lineup__grid {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    gap: 0.35rem;
+}
+
+.simple-lineup__grid button {
+    min-height: 2.9rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+/* Already in the team: stronger outline; in the lineup: filled. */
+.simple-lineup .simple-lineup__grid button.is-known {
+    border-color: var(--color-primary, #4b61d1);
+}
+
+.simple-lineup .simple-lineup__grid button.is-in-lineup {
+    background: rgba(75, 97, 209, 0.15);
+}
+
+.simple-lineup .simple-lineup__grid button.is-libero {
+    border-color: #f59e0b;
+}
+
+.simple-lineup .simple-lineup__more {
+    grid-column: span 2;
+    font-size: 0.85rem;
+}
+
+.simple-lineup__warning {
+    margin: 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(250, 204, 21, 0.18);
+    border: 1px solid #eab308;
+    font-weight: 700;
+}
+
+.simple-lineup .simple-lineup__detailed {
+    justify-self: start;
+    min-height: 2.5rem;
+    padding: 0 0.9rem;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 560px) {
+    .simple-lineup__grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}

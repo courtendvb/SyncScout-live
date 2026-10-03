@@ -31,8 +31,11 @@ function storeActiveProjectId(id: string | null) {
 // Display and input preferences, kept across reloads.
 const PREFERENCES_KEY = 'syncscout-live.preferences';
 
-/** 'court': draw the ball on the court. 'tag': buttons only (player → evaluation). */
-export type InputMode = 'court' | 'tag';
+/**
+ * 'court': draw the ball on the court. 'tag': buttons only (player → evaluation).
+ * 'basic': serve and point winner only, for rally-by-rally video.
+ */
+export type InputMode = 'court' | 'tag' | 'basic';
 
 type Preferences = {
   showDebugSubzones: boolean;

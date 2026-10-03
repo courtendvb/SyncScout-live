@@ -400,6 +400,9 @@ function getZoneFromReference(input: {
 }
 
 function getTouchStartEndZones(touch: BallTouch): { startZone?: string; endZone?: string; endSubzone?: string } {
+  if (touch.withoutZones) {
+    return {};
+  }
   const serveDetails = touch.advancedDetails?.serve;
   const attackDetails = touch.advancedDetails?.attack;
   const setDetails = touch.advancedDetails?.set;
@@ -446,7 +449,10 @@ function createTouchCode(input: {
   const skillCode = SKILL_CODE[touch.skill] ?? '?';
   const marker = TEAM_MARKER[touch.teamSide];
   const player = getPlayerById(project, touch.teamSide, touch.playerId);
-  const jersey = input.syntheticJersey ?? (player?.jerseyNumber ? padNumber(player.jerseyNumber) : '$$');
+  // A serve without a known server (beginner input) is written as player 00:
+  // viewers such as SyncScout build each rally from its serve row and skip "$$".
+  const unknownJersey = touch.skill === 'serve' ? '00' : '$$';
+  const jersey = input.syntheticJersey ?? (player?.jerseyNumber ? padNumber(player.jerseyNumber) : unknownJersey);
 
   if (!input.synthetic && (!touch.playerId || !player?.jerseyNumber)) {
     diagnostics.push(createDataVolleyExportDiagnostic({
@@ -510,8 +516,10 @@ function createTouchCode(input: {
   const endZone = sanitizeCodeSegment(zones.endZone, 1);
   const endSubzone = sanitizeCodeSegment(zones.endSubzone, 1);
   const customCode = cleanField(touch.customCode).replace(/[;\r\n]+/g, '').slice(0, 12);
+  // Column 14 is the number of blockers (attacks only); 13 and 15 stay unset.
+  const blockers = touch.skill === 'attack' && touch.numBlockers !== undefined ? String(touch.numBlockers) : '~';
 
-  return `${marker}${jersey}${skillCode}${skillType}${evaluation}${actionCode}${setType}${startZone}${endZone}${endSubzone}~~~${customCode}`;
+  return `${marker}${jersey}${skillCode}${skillType}${evaluation}${actionCode}${setType}${startZone}${endZone}${endSubzone}~${blockers}~${customCode}`;
 }
 
 function createSyntheticTouch(base: BallTouch, input: {
@@ -683,6 +691,7 @@ function createScoutRows(project: MatchProject, diagnostics: DataVolleyExportDia
       rows.push(createTimedRow({
         code: `${TEAM_MARKER[event.teamSide]}p${padNumber(score.home)}:${padNumber(score.away)}`,
         timestamp: event.createdAt,
+        videoSeconds: event.videoTimeSeconds,
         setNumber: event.setNumber,
         eventId: event.id,
         rallyNumber: event.rallyNumber,

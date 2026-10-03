@@ -1,36 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { useTranslation } from '@src/i18n';
 import { matchRepository } from '@src/infrastructure/repositories';
 import { exportMatchToDataVolley } from '@src/features/export/datavolley';
 import {
   MAX_VIDEO_SHIFT_SECONDS,
-  isSyncScoutConfigured,
+  clearSyncScoutAuth,
+  isSyncScoutAvailable,
   loadLastSyncScoutCategory,
-  loadSyncScoutSettings,
+  loadSyncScoutAuth,
   loadVideoShiftSeconds,
   saveLastSyncScoutCategory,
   saveVideoShiftSeconds,
 } from './syncscout-settings';
-import { uploadMatchToSyncScout, type SyncScoutUploadResult } from './syncscout-client';
+import {
+  SyncScoutAuthError,
+  fetchSyncScoutCategories,
+  uploadMatchToSyncScout,
+  type SyncScoutUploadResult,
+} from './syncscout-client';
+import { SyncScoutLoginForm } from './SyncScoutLoginForm';
 import { extractYouTubeId, extractYouTubeStartSeconds, formatVideoPosition, parseVideoPosition } from './youtube';
 import './send-to-syncscout.css';
 
 interface SendToSyncScoutPanelProps {
   projectId: string;
-}
-
-async function fetchKnownCategories(supabaseUrl: string, anonKey: string): Promise<string[]> {
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/matches?select=category`, {
-      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
-    });
-    if (!response.ok) return [];
-    const rows = (await response.json()) as Array<{ category?: string }>;
-    return [...new Set(rows.map((row) => row.category?.trim()).filter((c): c is string => Boolean(c)))].sort();
-  } catch {
-    return [];
-  }
 }
 
 /**
@@ -39,8 +32,9 @@ async function fetchKnownCategories(supabaseUrl: string, anonKey: string): Promi
  */
 export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
   const { t } = useTranslation();
-  const settings = useMemo(() => loadSyncScoutSettings(), []);
-  const configured = isSyncScoutConfigured(settings);
+  const available = isSyncScoutAvailable();
+  const [auth, setAuth] = useState(loadSyncScoutAuth);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [category, setCategory] = useState(loadLastSyncScoutCategory);
   const [knownCategories, setKnownCategories] = useState<string[]>([]);
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -65,15 +59,15 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
   }, [projectId]);
 
   useEffect(() => {
-    if (configured) {
-      void fetchKnownCategories(settings.supabaseUrl, settings.anonKey).then(setKnownCategories);
+    if (auth) {
+      void fetchSyncScoutCategories(auth).then(setKnownCategories);
     }
-  }, [configured, settings]);
+  }, [auth]);
 
   const youtubeId = extractYouTubeId(youtubeUrl);
   const firstServeSeconds = parseVideoPosition(firstServe);
   const needsFirstServe = !hasRecordedVideoTimes;
-  const canSend = configured && category.trim() !== '' && youtubeId !== null
+  const canSend = Boolean(auth) && category.trim() !== '' && youtubeId !== null
     && (!needsFirstServe || firstServeSeconds !== null) && status !== 'sending';
 
   const handleYoutubeUrlChange = (value: string) => {
@@ -94,7 +88,7 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
   };
 
   const handleSend = async () => {
-    if (!canSend || youtubeId === null) return;
+    if (!canSend || youtubeId === null || !auth) return;
     setStatus('sending');
     setErrorMessage('');
     try {
@@ -103,7 +97,7 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
       const exported = exportMatchToDataVolley(project, needsFirstServe && firstServeSeconds !== null
         ? { firstServeVideoSeconds: firstServeSeconds, videoShiftSeconds: videoShift }
         : { videoShiftSeconds: videoShift });
-      const uploaded = await uploadMatchToSyncScout(settings, {
+      const uploaded = await uploadMatchToSyncScout(auth, {
         dvwText: exported.text,
         fileName: exported.fileName,
         category: category.trim(),
@@ -114,19 +108,37 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
       setStatus('done');
     } catch (error) {
       console.error('Sending to SyncScout failed:', error);
+      if (error instanceof SyncScoutAuthError) {
+        // The login ran out (or was revoked): log in again, the form keeps its values.
+        clearSyncScoutAuth();
+        setAuth(null);
+        setSessionExpired(true);
+        setStatus('idle');
+        return;
+      }
       // fetch() rejects with a TypeError when the network or the address is unreachable.
-      setErrorMessage(error instanceof TypeError ? t('syncScoutNetworkError') : error instanceof Error ? error.message : String(error));
+      setErrorMessage(error instanceof TypeError ? t('syncScoutLoginNetwork') : error instanceof Error ? error.message : String(error));
       setStatus('error');
     }
   };
 
-  if (!configured) {
+  if (!available) {
     return (
       <section className="send-syncscout">
         <h3 className="send-syncscout__title">{t('syncScoutSendTitle')}</h3>
-        <p className="send-syncscout__hint">
-          {t('syncScoutNotConfigured')} <Link to="/settings">{t('settings')}</Link>
-        </p>
+        <p className="send-syncscout__hint">{t('syncScoutUnavailable')}</p>
+      </section>
+    );
+  }
+
+  if (!auth) {
+    return (
+      <section className="send-syncscout">
+        <h3 className="send-syncscout__title">{t('syncScoutSendTitle')}</h3>
+        <SyncScoutLoginForm
+          notice={sessionExpired ? t('syncScoutSessionExpired') : undefined}
+          onLoggedIn={(next) => { setAuth(next); setSessionExpired(false); }}
+        />
       </section>
     );
   }
@@ -135,6 +147,12 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
     <section className="send-syncscout">
       <h3 className="send-syncscout__title">{t('syncScoutSendTitle')}</h3>
       <p className="send-syncscout__hint">{t('syncScoutSendDescription')}</p>
+      <div className="send-syncscout__account">
+        <span>{t('syncScoutLoggedInAs', { team: auth.teamName })}</span>
+        <button type="button" className="btn-secondary btn-small" onClick={() => { clearSyncScoutAuth(); setAuth(null); }}>
+          {t('syncScoutLogout')}
+        </button>
+      </div>
 
       <label className="send-syncscout__field">
         <span>{t('syncScoutCategory')}</span>
@@ -203,9 +221,7 @@ export function SendToSyncScoutPanel({ projectId }: SendToSyncScoutPanelProps) {
       {status === 'done' && result && (
         <p className="send-syncscout__success" role="status">
           {t('syncScoutSent')}{' '}
-          {result.viewerLink && (
-            <a href={result.viewerLink} target="_blank" rel="noopener noreferrer">{t('syncScoutOpen')}</a>
-          )}
+          <a href={result.viewerLink} target="_blank" rel="noopener noreferrer">{t('syncScoutOpen')}</a>
         </p>
       )}
       {status === 'error' && (

@@ -119,6 +119,7 @@ import type { LiveScoutingViewport } from '../model/live-scouting-layout';
 import { LIVE_SCOUTING_SMARTPHONE_LANDSCAPE_MAX_HEIGHT } from '../model/live-scouting-layout';
 import { LiveScoutingVideoPanel, type LiveScoutingVideoPanelHandle } from '../live/video/LiveScoutingVideoPanel';
 import { TagInputPanel } from '../tagging/TagInputPanel';
+import { BasicInputPanel } from '../tagging/BasicInputPanel';
 import { playConfirmFeedback } from '@src/lib/utils/confirm-feedback';
 import '../scouting-screen.css';
 import '../scouting-simple-input.css';
@@ -213,10 +214,12 @@ export function ScoutingPage() {
   const setSimpleInput = useAppStore((state) => state.setSimpleInput);
   // Three levels on one switch: tags (buttons only), court (large buttons, draws
   // zones and courses), detailed (the original full DataVolley input).
-  const inputLevel: 'tag' | 'court' | 'detailed' = inputMode === 'tag' ? 'tag' : simpleInput ? 'court' : 'detailed';
-  const selectInputLevel = (level: 'tag' | 'court' | 'detailed') => {
-    setInputMode(level === 'tag' ? 'tag' : 'court');
-    if (level !== 'tag') {
+  const inputLevel: 'basic' | 'tag' | 'court' | 'detailed' = inputMode === 'basic' || inputMode === 'tag'
+    ? inputMode
+    : simpleInput ? 'court' : 'detailed';
+  const selectInputLevel = (level: 'basic' | 'tag' | 'court' | 'detailed') => {
+    setInputMode(level === 'basic' || level === 'tag' ? level : 'court');
+    if (level === 'court' || level === 'detailed') {
       setSimpleInput(level === 'court');
     }
   };
@@ -590,7 +593,7 @@ export function ScoutingPage() {
   // the landscape guard forces — skip it when the user has opted into
   // vertical mode, so the court actually gets the height it needs.
   // Tag input has no court at all, so it works upright on a phone too.
-  const worksInPortrait = courtOrientation === 'vertical' || inputMode === 'tag';
+  const worksInPortrait = courtOrientation === 'vertical' || inputMode === 'tag' || inputMode === 'basic';
   const requiresLandscape = isLandscapeRequiredForScoutingStage(activeStage) && !worksInPortrait;
   const liveScoutingOrientationGuardMediaQuery = getLiveScoutingOrientationGuardMediaQuery();
   const usesFixedShell = usesFixedScoutingShell(activeStage);
@@ -1363,6 +1366,8 @@ export function ScoutingPage() {
       combinationCode: draft.combinationCode,
       setterCallCode: draft.setterCallCode,
       customCode: draft.customCode,
+      numBlockers: draft.numBlockers,
+      ...(draft.withoutZones ? { withoutZones: true } : {}),
       homeSetterPosition,
       awaySetterPosition,
       // draft.zone is the zone where the user snapped the ball.
@@ -1411,7 +1416,8 @@ export function ScoutingPage() {
 
   const finalizeRally = (pointWinner: 'home' | 'away', reason?: string) => {
     playConfirmFeedback('point', useAppStore.getState().feedbackSound);
-    awardPoint(pointWinner, reason);
+    // With the video open, the point keeps its video position: SyncScout plays each rally up to it.
+    awardPoint(pointWinner, reason, liveVideoPanelRef.current?.getCurrentTime());
     const pointAwardedLiveMatch = useScoutingStore.getState().liveMatch;
     endRally();
     const rallyEndedLiveMatch = useScoutingStore.getState().liveMatch;
@@ -2093,6 +2099,30 @@ export function ScoutingPage() {
   const canUndoLeftPoint = leftTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
   const canUndoRightPoint = rightTeamSide === 'home' ? canUndoHomePoint : canUndoAwayPoint;
 
+  // Basic / Tags / Court / Detailed: on the live header and on the set-start screen,
+  // so the input level (and with it the lineup screen) is chosen before the set.
+  const renderInputLevelSwitch = () => (
+    <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
+      {([
+        ['basic', 'inputModeBasic', 'inputModeBasicHint'],
+        ['tag', 'inputModeTag', 'inputModeTagHint'],
+        ['court', 'inputModeCourt', 'inputModeCourtHint'],
+        ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
+      ] as const).map(([level, labelKey, hintKey]) => (
+        <button
+          key={level}
+          type="button"
+          className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
+          aria-pressed={inputLevel === level}
+          title={t(hintKey)}
+          onClick={() => selectInputLevel(level)}
+        >
+          {t(labelKey)}
+        </button>
+      ))}
+    </div>
+  );
+
   // Phone header: score first, then the per-team buttons, then set/rally and the
   // input level. Upright it stacks in rows; in landscape it is a single row.
   const renderPhoneTeamControls = (side: 'left' | 'right') => {
@@ -2183,26 +2213,7 @@ export function ScoutingPage() {
           <span className="phone-live-header__meta">
             {t('phoneSetRally', { set: currentSetLabel, rally: currentRallyLabel })}
           </span>
-          {activeStage === 'live_rally' ? (
-            <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
-              {([
-                ['tag', 'inputModeTag', 'inputModeTagHint'],
-                ['court', 'inputModeCourt', 'inputModeCourtHint'],
-                ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-              ] as const).map(([level, labelKey, hintKey]) => (
-                <button
-                  key={level}
-                  type="button"
-                  className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
-                  aria-pressed={inputLevel === level}
-                  title={t(hintKey)}
-                  onClick={() => selectInputLevel(level)}
-                >
-                  {t(labelKey)}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          {activeStage === 'live_rally' ? renderInputLevelSwitch() : null}
           {activeStage === 'live_rally' ? (
             <button
               type="button"
@@ -2239,7 +2250,8 @@ export function ScoutingPage() {
   // docked-but-empty tile in place. Never on a phone: live scouting from a
   // smartphone doesn't use video, and there's no width to spare for it
   // anyway — the panel isn't even rendered in that case (see below).
-  const isTagInputLiveRally = inputMode === 'tag' && activeStage === 'live_rally';
+  // Both button pads (basic and tag) replace the court.
+  const isTagInputLiveRally = (inputMode === 'tag' || inputMode === 'basic') && activeStage === 'live_rally';
   const isVideoDocked = (isVerticalCourtLiveRally || isTagInputLiveRally) && !videoPanelCollapsed && !isPhone;
   // The left-column header only earns its keep when the court is the sole
   // occupant of the row (it trades width for extra court height). Once the
@@ -2556,6 +2568,8 @@ export function ScoutingPage() {
           onBack={() => setStageOverride(stageSummary.currentStage === 'set_end' ? null : 'pre_match_config')}
           onSetStarted={handleSetStarted}
           onAddPlayers={handleAddPlayersToMatch}
+          simpleLineup={inputMode === 'tag' || inputMode === 'basic'}
+          inputLevelSwitch={renderInputLevelSwitch()}
         />
       )}
 
@@ -2587,7 +2601,24 @@ export function ScoutingPage() {
           )}
           <div className="scouting-screen__main-area">
             <div className={`scouting-screen__court-area${isVideoDocked ? ' scouting-screen__court-area--video-docked' : ''}${isTagInputLiveRally ? ' scouting-screen__court-area--tag' : ''}`}>
-              {isTagInputLiveRally ? (
+              {isTagInputLiveRally && inputMode === 'basic' ? (
+                <BasicInputPanel
+                  homeName={homeTeamName}
+                  awayName={awayTeamName}
+                  homePlayers={homeTeam.players}
+                  awayPlayers={awayTeam.players}
+                  homeLineup={liveMatch?.homeActiveLineup ?? null}
+                  awayLineup={liveMatch?.awayActiveLineup ?? null}
+                  servingTeam={liveMatch?.servingTeam ?? null}
+                  currentRallyTouches={liveMatch?.currentRallyTouches ?? []}
+                  leftTeamSide={leftTeamSide}
+                  rightTeamSide={rightTeamSide}
+                  onCommitTouches={handleTouchesCommitted}
+                  onFinalizeRally={finalizeRally}
+                  onUndo={handleGroupedUndo}
+                  canUndo={canEditLiveScore && groupedUndoAvailability.canApply}
+                />
+              ) : isTagInputLiveRally ? (
                 <TagInputPanel
                   homeTeam={homeTeam}
                   awayTeam={awayTeam}
@@ -2597,6 +2628,7 @@ export function ScoutingPage() {
                   currentRallyTouches={liveMatch?.currentRallyTouches ?? []}
                   leftTeamSide={leftTeamSide}
                   rightTeamSide={rightTeamSide}
+                  vertical={courtOrientation === 'vertical'}
                   confirmPoint={confirmPointAssignment}
                   onCommitTouches={handleTouchesCommitted}
                   onFinalizeRally={finalizeRally}
@@ -2977,26 +3009,7 @@ export function ScoutingPage() {
                 <span className="scouting-screen__event-label">{t('currentEvent')}</span>
                 <strong className="scouting-screen__event-value">{currentEventLabel}</strong>
               </div>
-              {activeStage === 'live_rally' ? (
-                <div className="scouting-screen__input-mode" role="group" aria-label={t('inputModeToggle')}>
-                  {([
-                    ['tag', 'inputModeTag', 'inputModeTagHint'],
-                    ['court', 'inputModeCourt', 'inputModeCourtHint'],
-                    ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-                  ] as const).map(([level, labelKey, hintKey]) => (
-                    <button
-                      key={level}
-                      type="button"
-                      className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
-                      aria-pressed={inputLevel === level}
-                      title={t(hintKey)}
-                      onClick={() => selectInputLevel(level)}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              {activeStage === 'live_rally' ? renderInputLevelSwitch() : null}
             </div>
 
             {activeStage === 'live_rally' && !simpleInput ? (
