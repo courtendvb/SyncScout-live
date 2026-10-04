@@ -12,3 +12,10 @@ export type InputLevel = 'basic' | 'tag' | 'court' | 'detailed';
 export const AVAILABLE_INPUT_LEVELS: readonly InputLevel[] = DIRECTION_INPUT_ENABLED
   ? ['basic', 'tag', 'court', 'detailed']
   : ['basic', 'tag'];
+
+/**
+ * Live input is only shown in landscape, on every device, so the court and
+ * buttons always have the same layout (the court is always horizontal).
+ * Holding the device upright shows "rotate your device" instead.
+ */
+export const LANDSCAPE_ONLY_INPUT = true;

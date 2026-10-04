@@ -4,7 +4,7 @@ import type { Locale } from '@src/i18n/locale';
 import type { TranslationKey } from '@src/i18n/translations';
 import type { SkillEvaluation } from '@src/domain/common/enums';
 import { useAppStore } from '@src/app/store/app-store';
-import { DIRECTION_INPUT_ENABLED } from '@src/features/scouting/model/input-levels';
+import { DIRECTION_INPUT_ENABLED, LANDSCAPE_ONLY_INPUT } from '@src/features/scouting/model/input-levels';
 import { SyncScoutSettingsSection } from '@src/features/syncscout/SyncScoutSettingsSection';
 import { resetLocalData } from '@src/infrastructure/storage/reset-local-data';
 import { matchRepository } from '@src/infrastructure/repositories';
@@ -312,15 +312,19 @@ export function SettingsPage() {
               {t('confirmPointAssignmentLabel')}
             </label>
             <p className="settings-page__text">{t('confirmPointAssignmentDescription')}</p>
-            <label className="settings-page__checkbox-label">
-              <input
-                type="checkbox"
-                checked={courtOrientation === 'vertical'}
-                onChange={(e) => setCourtOrientation(e.target.checked ? 'vertical' : 'horizontal')}
-              />
-              {t('verticalCourtOrientationLabel')}
-            </label>
-            <p className="settings-page__text">{t('verticalCourtOrientationDescription')}</p>
+            {!LANDSCAPE_ONLY_INPUT ? (
+              <>
+                <label className="settings-page__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={courtOrientation === 'vertical'}
+                    onChange={(e) => setCourtOrientation(e.target.checked ? 'vertical' : 'horizontal')}
+                  />
+                  {t('verticalCourtOrientationLabel')}
+                </label>
+                <p className="settings-page__text">{t('verticalCourtOrientationDescription')}</p>
+                  </>
+            ) : null}
           </section>
 
           <section className="settings-page__section">
