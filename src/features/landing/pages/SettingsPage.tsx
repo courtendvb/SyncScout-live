@@ -4,6 +4,7 @@ import type { Locale } from '@src/i18n/locale';
 import type { TranslationKey } from '@src/i18n/translations';
 import type { SkillEvaluation } from '@src/domain/common/enums';
 import { useAppStore } from '@src/app/store/app-store';
+import { DIRECTION_INPUT_ENABLED } from '@src/features/scouting/model/input-levels';
 import { SyncScoutSettingsSection } from '@src/features/syncscout/SyncScoutSettingsSection';
 import { resetLocalData } from '@src/infrastructure/storage/reset-local-data';
 import { matchRepository } from '@src/infrastructure/repositories';
@@ -232,6 +233,9 @@ export function SettingsPage() {
             <SyncScoutSettingsSection />
           </section>
 
+          {/* Court drawing only (toolbar and player markers on the court). */}
+          {DIRECTION_INPUT_ENABLED ? (
+            <>
           <section className="settings-page__section">
             <label className="form-label">
               {t('toolbarSize')}
@@ -272,17 +276,24 @@ export function SettingsPage() {
             </div>
           </section>
 
+            </>
+          ) : null}
+
           <section className="settings-page__section">
             <h2 className="settings-page__section-title">{t('scoutingSettingsTitle')}</h2>
-            <label className="settings-page__checkbox-label">
-              <input
-                type="checkbox"
-                checked={simpleInput}
-                onChange={(e) => setSimpleInput(e.target.checked)}
-              />
-              {t('simpleInputLabel')}
-            </label>
-            <p className="settings-page__text">{t('simpleInputDescription')}</p>
+            {DIRECTION_INPUT_ENABLED ? (
+              <>
+                <label className="settings-page__checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={simpleInput}
+                    onChange={(e) => setSimpleInput(e.target.checked)}
+                  />
+                  {t('simpleInputLabel')}
+                </label>
+                <p className="settings-page__text">{t('simpleInputDescription')}</p>
+              </>
+            ) : null}
             <label className="settings-page__checkbox-label">
               <input
                 type="checkbox"
@@ -335,11 +346,14 @@ export function SettingsPage() {
             <p className="settings-page__text">{t('compoundCodesNotes')}</p>
           </section>
 
+          {/* Key bindings apply to typed DataVolley codes (Detailed input only). */}
+          {DIRECTION_INPUT_ENABLED ? (
           <section className="settings-page__section">
             <h2 className="settings-page__section-title">{t('keyBindingsTitle')}</h2>
             <p className="settings-page__text">{t('keyBindingsDescription')}</p>
             <EvaluationKeyBindingsTable />
           </section>
+          ) : null}
 
           <section className="settings-page__section">
             <h2 className="settings-page__section-title">{t('experimentalSettingsTitle')}</h2>

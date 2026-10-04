@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { DIRECTION_INPUT_ENABLED } from '@src/features/scouting/model/input-levels';
 import type { MatchProject } from '@src/domain/match/types';
 import { createEmptyMatchProject } from '@src/domain/match/factories';
 import { normalizeMatchProject } from '@src/domain/match';
@@ -56,14 +57,18 @@ const DEFAULT_PREFERENCES: Preferences = {
   confirmPointAssignment: true,
   // Large touch buttons, no DataVolley detail rows (ball type, blockers, calls).
   simpleInput: true,
-  inputMode: 'court',
+  inputMode: 'tag',
   feedbackSound: true,
 };
 
 function loadPreferences(): Preferences {
   try {
     const raw = window.localStorage.getItem(PREFERENCES_KEY);
-    return raw ? { ...DEFAULT_PREFERENCES, ...(JSON.parse(raw) as Partial<Preferences>) } : DEFAULT_PREFERENCES;
+    const preferences = raw ? { ...DEFAULT_PREFERENCES, ...(JSON.parse(raw) as Partial<Preferences>) } : DEFAULT_PREFERENCES;
+    // Court drawing is not offered (see DIRECTION_INPUT_ENABLED): a stored "court" choice becomes tags.
+    return !DIRECTION_INPUT_ENABLED && preferences.inputMode === 'court'
+      ? { ...preferences, inputMode: 'tag' }
+      : preferences;
   } catch {
     return DEFAULT_PREFERENCES;
   }

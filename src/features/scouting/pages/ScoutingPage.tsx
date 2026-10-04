@@ -120,6 +120,7 @@ import { LIVE_SCOUTING_SMARTPHONE_LANDSCAPE_MAX_HEIGHT } from '../model/live-sco
 import { LiveScoutingVideoPanel, type LiveScoutingVideoPanelHandle } from '../live/video/LiveScoutingVideoPanel';
 import { TagInputPanel } from '../tagging/TagInputPanel';
 import { BasicInputPanel } from '../tagging/BasicInputPanel';
+import { AVAILABLE_INPUT_LEVELS } from '../model/input-levels';
 import { playConfirmFeedback } from '@src/lib/utils/confirm-feedback';
 import '../scouting-screen.css';
 import '../scouting-simple-input.css';
@@ -2108,7 +2109,7 @@ export function ScoutingPage() {
         ['tag', 'inputModeTag', 'inputModeTagHint'],
         ['court', 'inputModeCourt', 'inputModeCourtHint'],
         ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-      ] as const).map(([level, labelKey, hintKey]) => (
+      ] as const).filter(([level]) => AVAILABLE_INPUT_LEVELS.includes(level)).map(([level, labelKey, hintKey]) => (
         <button
           key={level}
           type="button"
