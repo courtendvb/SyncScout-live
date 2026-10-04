@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ScoutingCourtOrientation } from '@src/domain/spatial';
+import { LANDSCAPE_ONLY_INPUT } from './input-levels';
 
 const STORAGE_KEY = 'openvolleyscout.courtOrientation';
 
@@ -26,7 +27,8 @@ interface CourtOrientationState {
 }
 
 export const useCourtOrientationStore = create<CourtOrientationState>((set) => ({
-  orientation: readStoredCourtOrientation() ?? 'horizontal',
+  // Landscape-only input always uses the horizontal court.
+  orientation: LANDSCAPE_ONLY_INPUT ? 'horizontal' : readStoredCourtOrientation() ?? 'horizontal',
   setOrientation: (value) => {
     set({ orientation: value });
     writeStoredCourtOrientation(value);

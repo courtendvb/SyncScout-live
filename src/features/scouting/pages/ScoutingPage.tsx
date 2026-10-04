@@ -120,6 +120,7 @@ import { LIVE_SCOUTING_SMARTPHONE_LANDSCAPE_MAX_HEIGHT } from '../model/live-sco
 import { LiveScoutingVideoPanel, type LiveScoutingVideoPanelHandle } from '../live/video/LiveScoutingVideoPanel';
 import { TagInputPanel } from '../tagging/TagInputPanel';
 import { BasicInputPanel } from '../tagging/BasicInputPanel';
+import { AVAILABLE_INPUT_LEVELS, LANDSCAPE_ONLY_INPUT } from '../model/input-levels';
 import { playConfirmFeedback } from '@src/lib/utils/confirm-feedback';
 import '../scouting-screen.css';
 import '../scouting-simple-input.css';
@@ -303,6 +304,7 @@ export function ScoutingPage() {
   // On a phone the court follows the phone: vertical when held upright,
   // horizontal in landscape, so it always gets the long side of the screen.
   useEffect(() => {
+    if (LANDSCAPE_ONLY_INPUT) return;
     if (isSmartphonePortrait && courtOrientation === 'horizontal') {
       setCourtOrientation('vertical');
     } else if (isSmartphoneLandscape && courtOrientation === 'vertical') {
@@ -593,9 +595,13 @@ export function ScoutingPage() {
   // the landscape guard forces — skip it when the user has opted into
   // vertical mode, so the court actually gets the height it needs.
   // Tag input has no court at all, so it works upright on a phone too.
-  const worksInPortrait = courtOrientation === 'vertical' || inputMode === 'tag' || inputMode === 'basic';
+  const worksInPortrait = !LANDSCAPE_ONLY_INPUT
+    && (courtOrientation === 'vertical' || inputMode === 'tag' || inputMode === 'basic');
   const requiresLandscape = isLandscapeRequiredForScoutingStage(activeStage) && !worksInPortrait;
-  const liveScoutingOrientationGuardMediaQuery = getLiveScoutingOrientationGuardMediaQuery();
+  // Landscape-only input guards every upright device, not only phones.
+  const liveScoutingOrientationGuardMediaQuery = LANDSCAPE_ONLY_INPUT
+    ? '(orientation: portrait)'
+    : getLiveScoutingOrientationGuardMediaQuery();
   const usesFixedShell = usesFixedScoutingShell(activeStage);
   const isOperationalStage = isOperationalScoutingStage(activeStage);
   const isPreMatchStage = activeStage === 'pre_match_config';
@@ -2108,7 +2114,7 @@ export function ScoutingPage() {
         ['tag', 'inputModeTag', 'inputModeTagHint'],
         ['court', 'inputModeCourt', 'inputModeCourtHint'],
         ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-      ] as const).map(([level, labelKey, hintKey]) => (
+      ] as const).filter(([level]) => AVAILABLE_INPUT_LEVELS.includes(level)).map(([level, labelKey, hintKey]) => (
         <button
           key={level}
           type="button"
