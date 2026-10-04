@@ -216,3 +216,8 @@
     padding: 0 0.9rem;
     font-size: 0.85rem;
 }
+
+/* Tag pad beside the docked video is narrow: players above the grid. */
+.scouting-screen__court-area--tag.scouting-screen__court-area--video-docked > .tag-input {
+    grid-template-columns: minmax(0, 1fr);
+}

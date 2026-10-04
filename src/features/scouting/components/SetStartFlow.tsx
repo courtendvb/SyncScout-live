@@ -48,6 +48,8 @@ interface SetStartFlowProps {
   onAddPlayers?: (teamSide: TeamSide, players: QuickEntryPlayer[]) => Promise<AddPlayersResult>;
   /** Button input (tag / basic): the lineup is entered on a simple court with number buttons. */
   simpleLineup?: boolean;
+  /** Teams whose touches are recorded; an incomplete lineup is only asked about for these. */
+  recordedSides?: TeamSide[];
 }
 
 export interface AddPlayersResult extends QuickJerseyEntryOutcome {
@@ -722,6 +724,7 @@ export function SetStartFlow({
   onSetStarted,
   onAddPlayers,
   simpleLineup = false,
+  recordedSides,
 }: SetStartFlowProps) {
   const { t } = useTranslation();
   const [setupState, setSetupState] = useState<SetStartSetupState>(() => (
@@ -743,6 +746,7 @@ export function SetStartFlow({
   const lineupCount = (teamSide: TeamSide) => COURT_POSITIONS.filter((position) => setupState[teamSide].slots[position]).length;
   const asksAboutIncompleteLineup = (teamSide: TeamSide) => {
     if (!usesSimpleLineup || lineupCount(teamSide) === COURT_POSITIONS.length || incompleteAsked[teamSide]) return false;
+    if (recordedSides && !recordedSides.includes(teamSide)) return false;
     setIncompleteAsked((current) => ({ ...current, [teamSide]: true }));
     return true;
   };

@@ -212,6 +212,8 @@ export function ScoutingPage() {
   const simpleInput = useAppStore((state) => state.simpleInput);
   const inputMode = useAppStore((state) => state.inputMode);
   const setInputMode = useAppStore((state) => state.setInputMode);
+  const tagRecordTeams = useAppStore((state) => state.tagRecordTeams);
+  const setTagRecordTeams = useAppStore((state) => state.setTagRecordTeams);
   const setSimpleInput = useAppStore((state) => state.setSimpleInput);
   // Three levels on one switch: tags (buttons only), court (large buttons, draws
   // zones and courses), detailed (the original full DataVolley input).
@@ -345,7 +347,9 @@ export function ScoutingPage() {
   // docks beside a vertical court instead of floating over it. The panel
   // isn't even rendered on a smartphone (see isVideoDocked below and its
   // render site) so this initial value only matters on other viewports.
-  const [videoPanelCollapsed, setVideoPanelCollapsed] = useState(isSmartphoneLandscape);
+  // Starts closed: live input in the hall rarely uses a video, and the pad needs the width.
+  // The panel's own tab opens it to tag from a recording.
+  const [videoPanelCollapsed, setVideoPanelCollapsed] = useState(true);
   const statusTimeoutRef = useRef<number | null>(null);
   const scoreFeedbackTimeoutRef = useRef<number | null>(null);
   const previousScoreSnapshotRef = useRef<ScoreSnapshot | null>(null);
@@ -2575,6 +2579,7 @@ export function ScoutingPage() {
           onSetStarted={handleSetStarted}
           onAddPlayers={handleAddPlayersToMatch}
           simpleLineup={inputMode === 'tag' || inputMode === 'basic'}
+          recordedSides={inputMode === 'tag' && tagRecordTeams !== 'both' ? [tagRecordTeams] : undefined}
           inputLevelSwitch={renderInputLevelSwitch()}
         />
       )}
@@ -2634,7 +2639,8 @@ export function ScoutingPage() {
                   currentRallyTouches={liveMatch?.currentRallyTouches ?? []}
                   leftTeamSide={leftTeamSide}
                   rightTeamSide={rightTeamSide}
-                  vertical={courtOrientation === 'vertical'}
+                  recordTeams={tagRecordTeams}
+                  onRecordTeamsChange={setTagRecordTeams}
                   confirmPoint={confirmPointAssignment}
                   onCommitTouches={handleTouchesCommitted}
                   onFinalizeRally={finalizeRally}

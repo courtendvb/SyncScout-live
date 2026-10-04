@@ -237,23 +237,6 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.scouting-screen--phone .tag-input__skills {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.scouting-screen--phone .tag-input__skill {
-    min-height: 2.75rem;
-    font-size: 0.8rem;
-}
-
-.scouting-screen--phone .tag-input__evals {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.scouting-screen--phone .tag-input__eval {
-    min-height: 3.5rem;
-}
-
 .scouting-screen--phone .tag-input__footer {
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
@@ -298,12 +281,68 @@
         font-size: 1.2rem;
     }
 
-    .scouting-screen--phone .tag-input__eval {
-        min-height: 3rem;
+    .scouting-screen--phone .tag-input__prompt {
+        min-height: 2rem;
+        font-size: 0.72rem;
     }
 
-    .scouting-screen--phone .tag-input__eval-symbol {
-        font-size: 1.35rem;
+    .scouting-screen--phone .tag-input__prompt > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .scouting-screen--phone .tag-grid__row {
+        grid-template-columns: 4rem repeat(6, minmax(0, 1fr));
+        gap: 0.2rem;
+    }
+
+    .scouting-screen--phone .tag-grid {
+        gap: 0.2rem;
+    }
+
+    .scouting-screen--phone .tag-grid__cell {
+        min-height: 2.35rem;
+    }
+
+    .scouting-screen--phone .tag-grid__symbol {
+        font-size: 1rem;
+    }
+
+    .scouting-screen--phone .tag-grid__label {
+        display: none;
+    }
+
+    .scouting-screen--phone .tag-grid__skill {
+        padding-left: 0.2rem;
+        font-size: 0.62rem;
+    }
+
+    /* Both teams on a phone: the bench buttons sit under their own half,
+       so the team names give way to keep the point buttons on screen. */
+    .scouting-screen--phone .tag-court--horizontal .tag-court__player {
+        min-height: 2.3rem;
+    }
+
+    .scouting-screen--phone .tag-court--horizontal .tag-court__player span {
+        display: none;
+    }
+
+    .scouting-screen--phone .tag-court__team-name {
+        display: none;
+    }
+
+    .scouting-screen--phone .tag-court__extras > .tag-input__player,
+    .scouting-screen--phone .tag-court__extras > .tag-input__bench-toggle {
+        min-height: 2.4rem;
+    }
+
+    .scouting-screen--phone .tag-court--single .tag-court__player {
+        min-height: 3.2rem;
+    }
+
+    .scouting-screen--phone .tag-input__footer--opponent .tag-input__point {
+        min-height: 2.9rem;
     }
 }
 
@@ -413,62 +452,4 @@
     .phone-live-header__score {
         gap: 0.3rem;
     }
-}
-
-/* Upright phone, court tag pad: everything down to the point buttons fits without scrolling. */
-.scouting-screen--phone-portrait .tag-input {
-    gap: 0.3rem;
-    padding: 0.3rem;
-}
-
-.scouting-screen--phone-portrait .tag-input__rally:has(.tag-input__rally-empty) {
-    display: none;
-}
-
-.scouting-screen--phone-portrait .tag-court {
-    padding: 0.25rem;
-}
-
-.scouting-screen--phone-portrait .tag-court__half {
-    gap: 0.25rem;
-    padding: 0.25rem;
-}
-
-.scouting-screen--phone-portrait .tag-court__player {
-    min-height: 2.75rem;
-}
-
-.scouting-screen--phone-portrait .tag-court__player strong {
-    font-size: 1.2rem;
-}
-
-.scouting-screen--phone-portrait .tag-court__extras {
-    flex-wrap: nowrap;
-}
-
-.scouting-screen--phone-portrait .tag-court__team-name {
-    flex: 1 1 auto;
-}
-
-.scouting-screen--phone-portrait .tag-court__extras > .tag-input__player,
-.scouting-screen--phone-portrait .tag-court__extras > .tag-input__bench-toggle {
-    flex: 0 0 auto;
-    min-height: 2.5rem;
-    padding: 0 0.75rem;
-}
-
-.scouting-screen--phone-portrait .tag-input__skill {
-    min-height: 2.5rem;
-}
-
-.scouting-screen--phone-portrait .tag-input__detail {
-    min-height: 2.2rem;
-}
-
-.scouting-screen--phone-portrait .tag-input__eval {
-    min-height: 3rem;
-}
-
-.scouting-screen--phone-portrait .tag-input__eval-symbol {
-    font-size: 1.35rem;
 }
