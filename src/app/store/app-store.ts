@@ -38,6 +38,9 @@ const PREFERENCES_KEY = 'syncscout-live.preferences';
  */
 export type InputMode = 'court' | 'tag' | 'basic';
 
+/** Teams recorded in tag input: one team (usually your own) or both. */
+export type TagRecordTeams = 'home' | 'away' | 'both';
+
 type Preferences = {
   showDebugSubzones: boolean;
   hideImportWarnings: boolean;
@@ -47,6 +50,7 @@ type Preferences = {
   simpleInput: boolean;
   inputMode: InputMode;
   feedbackSound: boolean;
+  tagRecordTeams: TagRecordTeams;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -59,6 +63,8 @@ const DEFAULT_PREFERENCES: Preferences = {
   simpleInput: true,
   inputMode: 'tag',
   feedbackSound: true,
+  // Most coaches record their own team; the home team is taken as "us".
+  tagRecordTeams: 'home',
 };
 
 function loadPreferences(): Preferences {
@@ -85,6 +91,7 @@ function savePreferences(state: Preferences) {
       simpleInput: state.simpleInput,
       inputMode: state.inputMode,
       feedbackSound: state.feedbackSound,
+      tagRecordTeams: state.tagRecordTeams,
     };
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
@@ -110,6 +117,7 @@ interface AppStoreState {
   simpleInput: boolean;
   inputMode: InputMode;
   feedbackSound: boolean;
+  tagRecordTeams: TagRecordTeams;
   createProject: () => void;
   setActiveProject: (project: MatchProject) => void;
   closeProject: () => void;
@@ -121,6 +129,7 @@ interface AppStoreState {
   setSimpleInput: (value: boolean) => void;
   setInputMode: (value: InputMode) => void;
   setFeedbackSound: (value: boolean) => void;
+  setTagRecordTeams: (value: TagRecordTeams) => void;
 }
 
 export const useAppStore = create<AppStoreState>((set, get) => {
@@ -163,6 +172,9 @@ export const useAppStore = create<AppStoreState>((set, get) => {
   },
   setInputMode: (value) => {
     setPreference({ inputMode: value });
+  },
+  setTagRecordTeams: (value) => {
+    setPreference({ tagRecordTeams: value });
   },
   setFeedbackSound: (value) => {
     setPreference({ feedbackSound: value });

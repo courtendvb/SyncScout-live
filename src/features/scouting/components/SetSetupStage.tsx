@@ -21,6 +21,7 @@ interface SetSetupStageProps {
   }) => void;
   onAddPlayers?: (teamSide: TeamSide, players: QuickEntryPlayer[]) => Promise<AddPlayersResult>;
   simpleLineup?: boolean;
+  recordedSides?: TeamSide[];
   /** Input level switch, so the level (and the lineup screen it brings) is chosen before the set. */
   inputLevelSwitch?: ReactNode;
 }
@@ -35,6 +36,7 @@ export function SetSetupStage({
   onSetStarted,
   onAddPlayers,
   simpleLineup,
+  recordedSides,
   inputLevelSwitch,
 }: SetSetupStageProps) {
   const { t } = useTranslation();
@@ -79,6 +81,7 @@ export function SetSetupStage({
           onAddPlayers={onAddPlayers}
           key={simpleLineup ? 'simple' : 'detailed'}
           simpleLineup={simpleLineup}
+          recordedSides={recordedSides}
         />
       </div>
     </section>
