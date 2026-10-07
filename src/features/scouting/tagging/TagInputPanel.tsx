@@ -561,6 +561,8 @@ export function TagInputPanel({
         ))}
       </div>
       <div className="tag-input__detail-group" aria-label={t('combination')}>
+        {/* Setter calls: kept on the set only (see buildTagCode). */}
+        <span className="tag-input__detail-label">{t(getSkillTranslationKey('set'))}</span>
         {COMBINATION_OPTIONS.map((code) => (
           <button
             key={code}

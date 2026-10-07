@@ -588,6 +588,62 @@ test('substitution_made event generates a substitution row in scout', () => {
   assert.ok(/^\*c10:11/m.test(scoutText), 'Must have home substitution row *c10:11');
 });
 
+test('lineup columns follow side-out rotations in court-position order', () => {
+  const homeIds = [1, 2, 3, 4, 5, 6].map(() => nextId('hp'));
+  const awayIds = [7, 8, 9, 10, 11, 12].map(() => nextId('ap'));
+  const homeTeam = makeTeam({
+    name: 'Rot Home',
+    players: homeIds.map((id, i) => makePlayer({ id, jerseyNumber: i + 1, firstName: 'H', lastName: `Home${i + 1}` })),
+  });
+  // Jersey-only roster, as entered at the venue.
+  const awayTeam = makeTeam({
+    name: 'Rot Away',
+    players: awayIds.map((id, i) => makePlayer({ id, jerseyNumber: i + 7, firstName: '', lastName: '', shortName: '', playerCode: '' })),
+  });
+  const awayLineup = { ...makeLineup('away', awayIds), setterPlayerId: undefined };
+  const t0 = 1_700_300_000_000;
+  const events: MatchEvent[] = [
+    {
+      id: nextId('ev'), type: 'set_started', setNumber: 1, createdAt: t0,
+      homeLineup: makeLineup('home', homeIds, 2),
+      awayLineup,
+      servingTeam: 'away',
+    },
+  ];
+  const winners: Array<'home' | 'away'> = ['home', 'home', 'away', 'away'];
+  let serving: 'home' | 'away' = 'away';
+  winners.forEach((winner, index) => {
+    const at = t0 + (index + 1) * 10_000;
+    events.push({
+      id: nextId('ev'), type: 'touch_recorded', createdAt: at,
+      touch: makeTouch({
+        setNumber: 1, rallyNumber: index + 1, sequenceNumber: 1,
+        teamSide: serving, playerId: serving === 'home' ? homeIds[0] : awayIds[0], skill: 'serve', evaluation: '-', createdAt: at,
+      }),
+    });
+    events.push({ id: nextId('ev'), type: 'point_awarded', createdAt: at + 5000, setNumber: 1, rallyNumber: index + 1, teamSide: winner });
+    serving = winner;
+  });
+
+  const text = serializeDataVolleyModel(extractOvsMatchForDataVolley(makeProject({ homeTeam, awayTeam, events })).model);
+  const serveRows = text.slice(text.indexOf('[3SCOUT]')).split('\n').filter((line) => /^[*a]\d\dS/.test(line));
+  const columns = serveRows.map((line) => {
+    const c = line.split(';');
+    return { home: c[9], away: c[10], homeLineup: c.slice(14, 20).join(','), awayLineup: c.slice(20, 26).join(',') };
+  });
+
+  // Rally 1: as started. The home setter (#3) is in position 3; the away team has
+  // no setter, so its rotation is counted from the starting lineup (1).
+  assert.deepStrictEqual(columns[0], { home: '3', away: '1', homeLineup: '1,2,3,4,5,6', awayLineup: '7,8,9,10,11,12' });
+  // Home sided out: #2 moves to position 1, the setter to position 2.
+  assert.deepStrictEqual(columns[1], { home: '2', away: '1', homeLineup: '2,3,4,5,6,1', awayLineup: '7,8,9,10,11,12' });
+  // Home kept serving: no rotation.
+  assert.deepStrictEqual(columns[2], { home: '2', away: '1', homeLineup: '2,3,4,5,6,1', awayLineup: '7,8,9,10,11,12' });
+  // Away sided out.
+  assert.deepStrictEqual(columns[3], { home: '2', away: '6', homeLineup: '2,3,4,5,6,1', awayLineup: '8,9,10,11,12,7' });
+
+});
+
 // ── Round-trip ───────────────────────────────────────────────────────────────
 
 test('round-trip: exported file parses without fatal errors', () => {

@@ -39,13 +39,15 @@ describe('buildTagCode', () => {
 
 describe('buildTagCode details', () => {
   it('adds ball type and combination before the evaluation', () => {
-    const code = buildTagCode({ teamSide: 'away', jerseyNumber: 7, skill: 'attack', evaluation: '#', ballType: 'Q', combination: 'K1' });
-    expect(code).toBe('a07AQK1#');
+    const code = buildTagCode({ teamSide: 'away', jerseyNumber: 7, skill: 'set', evaluation: '#', ballType: 'Q', combination: 'K1' });
+    expect(code).toBe('a07EQK1#');
     const [parsed] = parseDataVolleyInput(code);
-    expect(parsed).toMatchObject({ valid: true, skill: 'attack', skillType: 'Q', actionCode: 'K1', evaluation: '#' });
+    expect(parsed).toMatchObject({ valid: true, skill: 'set', skillType: 'Q', actionCode: 'K1', evaluation: '#' });
   });
 
   it('leaves the combination out for skills that have none', () => {
     expect(buildTagCode({ teamSide: 'home', jerseyNumber: 3, skill: 'serve', evaluation: '+', ballType: 'M', combination: 'K1' })).toBe('*03SM+');
+    // Setter calls are not attack combinations.
+    expect(buildTagCode({ teamSide: 'home', jerseyNumber: 4, skill: 'attack', evaluation: '#', ballType: 'Q', combination: 'K1' })).toBe('*04AQ#');
   });
 });
