@@ -15,12 +15,20 @@ import type {
   DataVolleyScoutRow,
 } from '../types';
 
+/**
+ * Lineup columns of a scout row: the jerseys in court positions 1-6 (index 0 is
+ * position 1) and the setter's court position, which DataVolley readers such as
+ * SyncScout use as the rotation number.
+ */
 type LineupState = {
   home: Array<number | undefined>;
   away: Array<number | undefined>;
   homeSetterPosition?: number;
   awaySetterPosition?: number;
 };
+
+/** Court position a player moves to when their team wins the serve back. */
+const SIDEOUT_ROTATION: Record<number, number> = { 1: 6, 6: 5, 5: 4, 4: 3, 3: 2, 2: 1 };
 
 type ScoreState = {
   home: number;
@@ -51,6 +59,8 @@ const SKILL_CODE: Partial<Record<BallTouch['skill'], string>> = {
   block: 'B',
   dig: 'D',
   freeball: 'F',
+  // DataVolley has no cover skill; scouts code a cover as a dig.
+  cover: 'D',
 };
 
 const ROLE_CODE: Record<string, string> = {
@@ -330,9 +340,15 @@ function getJerseyNumber(project: MatchProject, side: TeamSide, playerId?: strin
 
 function getLineupState(project: MatchProject, event: Extract<MatchEvent, { type: 'set_started' }>): LineupState {
   const toJerseys = (lineup: StartingLineup, side: TeamSide) =>
-    lineup.slots.map((slot) => getJerseyNumber(project, side, slot.playerId));
+    Array.from({ length: 6 }, (_, index) => {
+      const slot = lineup.slots.find((candidate) => candidate.courtPosition === index + 1);
+      return getJerseyNumber(project, side, slot?.playerId);
+    });
+  // Without a setter the rotation is counted from the starting lineup: the
+  // player starting in position 1 stands in for the setter, so rotation 1 is
+  // the first rotation of the set and side-outs move it 6, 5, 4 ...
   const getSetterPosition = (lineup: StartingLineup) =>
-    lineup.slots.find((slot) => slot.playerId === lineup.setterPlayerId)?.courtPosition;
+    lineup.slots.find((slot) => lineup.setterPlayerId && slot.playerId === lineup.setterPlayerId)?.courtPosition ?? 1;
 
   return {
     home: toJerseys(event.homeLineup, 'home'),
@@ -340,6 +356,29 @@ function getLineupState(project: MatchProject, event: Extract<MatchEvent, { type
     homeSetterPosition: getSetterPosition(event.homeLineup),
     awaySetterPosition: getSetterPosition(event.awayLineup),
   };
+}
+
+function rotateLineupState(lineup: LineupState | null, side: TeamSide): LineupState | null {
+  if (!lineup) return lineup;
+  const current = side === 'home' ? lineup.home : lineup.away;
+  const rotated: Array<number | undefined> = Array.from({ length: 6 });
+  current.forEach((jersey, index) => {
+    rotated[SIDEOUT_ROTATION[index + 1] - 1] = jersey;
+  });
+  const setterKey = side === 'home' ? 'homeSetterPosition' : 'awaySetterPosition';
+  const setterPosition = lineup[setterKey];
+  return {
+    ...lineup,
+    [side]: rotated,
+    [setterKey]: setterPosition ? SIDEOUT_ROTATION[setterPosition] : setterPosition,
+  };
+}
+
+function assignSetter(lineup: LineupState | null, side: TeamSide, setterNumber?: number): LineupState | null {
+  if (!lineup || !setterNumber) return lineup;
+  const index = (side === 'home' ? lineup.home : lineup.away).indexOf(setterNumber);
+  if (index < 0) return lineup;
+  return { ...lineup, [side === 'home' ? 'homeSetterPosition' : 'awaySetterPosition']: index + 1 };
 }
 
 function applyLineupReplacement(lineup: LineupState | null, side: TeamSide, outNumber?: number, inNumber?: number): LineupState | null {
@@ -612,7 +651,26 @@ function createScoutRows(project: MatchProject, diagnostics: DataVolleyExportDia
   let currentSetNumber = 1;
   let currentLineup: LineupState | null = null;
   let score: ScoreState = { home: 0, away: 0 };
+  let servingTeam: TeamSide | null = null;
   const emittedRallies = new Set<string>();
+
+  const pushPoint = (event: Extract<MatchEvent, { type: 'point_awarded' | 'red_card_point' }>, rotate: boolean) => {
+    score[event.teamSide] += 1;
+    rows.push(createTimedRow({
+      code: `${TEAM_MARKER[event.teamSide]}p${padNumber(score.home)}:${padNumber(score.away)}`,
+      timestamp: event.createdAt,
+      videoSeconds: event.type === 'point_awarded' ? event.videoTimeSeconds : undefined,
+      setNumber: event.setNumber,
+      eventId: event.id,
+      rallyNumber: event.rallyNumber,
+      lineup: currentLineup,
+    }));
+    // A side-out rotates the team winning the serve back, from the next rally on.
+    if (rotate && servingTeam && servingTeam !== event.teamSide) {
+      currentLineup = rotateLineupState(currentLineup, event.teamSide);
+    }
+    servingTeam = event.teamSide;
+  };
 
   project.events.forEach((event) => {
     if (event.type === 'match_created' || event.type === 'rally_started' || event.type === 'rally_ended') {
@@ -623,6 +681,7 @@ function createScoutRows(project: MatchProject, diagnostics: DataVolleyExportDia
       currentSetNumber = event.setNumber;
       currentLineup = getLineupState(project, event);
       score = { home: 0, away: 0 };
+      servingTeam = event.servingTeam;
       const homeCaptain = getMatchRoster(project, 'home').find((player) => player.isCaptain);
       const awayCaptain = getMatchRoster(project, 'away').find((player) => player.isCaptain);
       const homeLineupPlayer = currentLineup.home.find((jersey): jersey is number => typeof jersey === 'number');
@@ -687,16 +746,17 @@ function createScoutRows(project: MatchProject, diagnostics: DataVolleyExportDia
     }
 
     if (event.type === 'point_awarded') {
-      score[event.teamSide] += 1;
-      rows.push(createTimedRow({
-        code: `${TEAM_MARKER[event.teamSide]}p${padNumber(score.home)}:${padNumber(score.away)}`,
-        timestamp: event.createdAt,
-        videoSeconds: event.videoTimeSeconds,
-        setNumber: event.setNumber,
-        eventId: event.id,
-        rallyNumber: event.rallyNumber,
-        lineup: currentLineup,
-      }));
+      pushPoint(event, !event.skipRotation);
+      return;
+    }
+
+    if (event.type === 'red_card_point') {
+      pushPoint(event, true);
+      return;
+    }
+
+    if (event.type === 'setter_assigned') {
+      currentLineup = assignSetter(currentLineup, event.teamSide, getJerseyNumber(project, event.teamSide, event.setterPlayerId));
       return;
     }
 

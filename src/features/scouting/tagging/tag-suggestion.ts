@@ -64,7 +64,10 @@ export function suggestNextTag(input: {
 
 /**
  * DataVolley code for one tagged touch, e.g. "*07A#", or with the optional
- * details "*07AQK1#" (ball type Q, combination K1). Zones are never tagged.
+ * details "*05EQK1#" (ball type Q, combination K1). Zones are never tagged.
+ * The combinations offered (K1, K7 ...) are DataVolley setter calls, which
+ * belong on the set row only: on an attack row they would read as an
+ * attack combination that does not exist.
  */
 export function buildTagCode(input: {
   teamSide: TeamSide;
@@ -76,6 +79,6 @@ export function buildTagCode(input: {
 }): string {
   const team = input.teamSide === 'home' ? '*' : 'a';
   const jersey = String(input.jerseyNumber).padStart(2, '0');
-  const combination = input.skill === 'attack' || input.skill === 'set' ? input.combination ?? '' : '';
+  const combination = input.skill === 'set' ? input.combination ?? '' : '';
   return `${team}${jersey}${SKILL_LETTER[input.skill] ?? 'A'}${input.ballType ?? ''}${combination}${input.evaluation}`;
 }
