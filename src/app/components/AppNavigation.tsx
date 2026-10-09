@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { useTranslation } from '@src/i18n';
+import { useTranslation, type Locale } from '@src/i18n';
 
 const primaryNavItems = [
   { path: '/teams', labelKey: 'teams' },
@@ -14,8 +14,13 @@ const secondaryNavItems = [
   { path: '/about', labelKey: 'about' },
 ] as const;
 
+const LOCALE_BUTTONS: Array<{ locale: Locale; label: string }> = [
+  { locale: 'en', label: 'EN' },
+  { locale: 'ja', label: 'JP' },
+];
+
 export function AppNavigation({ compact = false }: { compact?: boolean }) {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const location = useLocation();
   const isScoutingRoute = location.pathname === '/scouting';
   const isCompact = compact || isScoutingRoute;
@@ -56,6 +61,20 @@ export function AppNavigation({ compact = false }: { compact?: boolean }) {
               {t(item.labelKey)}
             </NavLink>
           ))}
+          <div className="app-header__locale" role="group" aria-label={t('language')}>
+            {LOCALE_BUTTONS.map((item) => (
+              <button
+                key={item.locale}
+                type="button"
+                lang={item.locale}
+                className={`app-header__locale-button${locale === item.locale ? ' is-active' : ''}`}
+                aria-pressed={locale === item.locale}
+                onClick={() => setLocale(item.locale)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </nav>
       </div>
     </header>

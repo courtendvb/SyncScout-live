@@ -13,6 +13,7 @@ import {
   getMatchTeamSnapshot,
   normalizeMatchProject,
   setMatchTeamSelection,
+  isUnnamedOpponentName,
 } from '@src/domain/match';
 import {
   competitionRepository,
@@ -272,8 +273,9 @@ export function MatchSetupPage() {
     const prefix = teamType === 'home' ? 'homeTeam' : 'awayTeam';
     const nameErrorKey = teamType === 'home' ? 'homeTeamName' : 'awayTeamName';
 
-    if (!team.teamName.trim()) {
-      stepErrors[nameErrorKey] = teamType === 'home' ? t('homeTeamNameRequired') : t('awayTeamNameRequired');
+    // The opponent may stay unnamed: it is then called "相手" / "Opponent".
+    if (teamType === 'home' && !team.teamName.trim()) {
+      stepErrors[nameErrorKey] = t('homeTeamNameRequired');
     }
 
     team.players.forEach((player, index) => {
@@ -569,7 +571,7 @@ export function MatchSetupPage() {
   // (not by name, which two different opponents can share).
   const saveTeamArchiveIfNeeded = async (team: TeamSelectionState): Promise<ArchivedTeam | null> => {
     const teamName = team.teamName.trim();
-    if (!teamName) {
+    if (!teamName || isUnnamedOpponentName(teamName)) {
       return null;
     }
 
@@ -629,10 +631,14 @@ export function MatchSetupPage() {
       project.metadata.playedAt = playedAt;
       project.updatedAt = Date.now();
 
+      const awayTeam = formData.awayTeam.teamName.trim()
+        ? formData.awayTeam
+        : { ...formData.awayTeam, teamName: t('opponentDefaultName'), archivedTeam: null };
+
       // Archive first, so new teams get an id the match roster can point to.
       const [homeArchive, awayArchive] = await Promise.all([
         saveTeamArchiveIfNeeded(formData.homeTeam),
-        saveTeamArchiveIfNeeded(formData.awayTeam),
+        saveTeamArchiveIfNeeded(awayTeam),
       ]);
 
       setMatchTeamSelection(project, 'home', createSelectionFromTeamState(
@@ -643,7 +649,7 @@ export function MatchSetupPage() {
       setMatchTeamSelection(project, 'away', createSelectionFromTeamState(
         project.awaySelection.teamId,
         project.awaySelection.teamCode ?? 'TBD',
-        { ...formData.awayTeam, archivedTeam: awayArchive ?? formData.awayTeam.archivedTeam },
+        { ...awayTeam, archivedTeam: awayArchive ?? awayTeam.archivedTeam },
       ));
 
       const normalizedProject = normalizeMatchProject(project);

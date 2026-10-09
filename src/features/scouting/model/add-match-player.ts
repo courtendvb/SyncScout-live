@@ -1,6 +1,7 @@
 import {
   addJerseyPlayerToSelection,
   getMatchTeamSelection,
+  isUnnamedOpponentName,
   setMatchTeamSelection,
   type MatchProject,
   type MatchRosterPlayer,
@@ -14,6 +15,7 @@ export type AddMatchPlayerResult =
 
 async function findArchivedTeam(project: MatchProject, teamSide: MatchTeamSide): Promise<ArchivedTeamAggregate | null> {
   const selection = getMatchTeamSelection(project, teamSide);
+  if (isUnnamedOpponentName(selection.teamName)) return null;
   if (selection.archivedTeamId) {
     const byId = await teamRepository.getById(selection.archivedTeamId);
     if (byId) return byId;
@@ -60,7 +62,7 @@ export async function addJerseyPlayerToMatch(
     try {
       if (archive) {
         await teamRepository.addPlayer(archive.team.id, archivePlayer);
-      } else if (selection.teamName.trim()) {
+      } else if (selection.teamName.trim() && !isUnnamedOpponentName(selection.teamName)) {
         const created = await teamRepository.create({ name: selection.teamName.trim(), staff: selection.staff, players: [archivePlayer] });
         result.selection.archivedTeamId = created.team.id;
         result.player.archivedTeamId = created.team.id;
