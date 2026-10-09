@@ -419,6 +419,15 @@ export function ScoutingPage() {
       ? 'pre_match_config'
       : stageSummary?.currentStage ?? 'pre_match_config';
 
+  // Live input hides the app's menu bar: it costs a row of height, and a stray
+  // tap on it leaves the match. The menu button on the live header shows it again.
+  const [isAppMenuShown, setIsAppMenuShown] = useState(false);
+  const hidesAppMenu = activeStage === 'live_rally' && !isAppMenuShown;
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-live-input', hidesAppMenu);
+    return () => document.documentElement.removeAttribute('data-live-input');
+  }, [hidesAppMenu]);
+
   useEffect(() => {
     if (stageSummary?.currentStage !== 'set_end') {
       setStageOverride(null);
@@ -2133,6 +2142,19 @@ export function ScoutingPage() {
     </div>
   );
 
+  const renderAppMenuToggle = () => (
+    <button
+      type="button"
+      className={isPhone ? 'phone-live-header__button' : 'scouting-screen__menu-toggle'}
+      aria-pressed={isAppMenuShown}
+      title={t('liveAppMenu')}
+      aria-label={t('liveAppMenu')}
+      onClick={() => setIsAppMenuShown((shown) => !shown)}
+    >
+      <span aria-hidden="true">☰</span>{isPhone ? null : ` ${t('liveAppMenu')}`}
+    </button>
+  );
+
   // Phone header: score first, then the per-team buttons, then set/rally and the
   // input level. Upright it stacks in rows; in landscape it is a single row.
   const renderPhoneTeamControls = (side: 'left' | 'right') => {
@@ -2239,6 +2261,7 @@ export function ScoutingPage() {
               <span aria-hidden="true">⇄</span>
             </button>
           ) : null}
+          {activeStage === 'live_rally' ? renderAppMenuToggle() : null}
         </div>
       </section>
     );
@@ -3022,6 +3045,7 @@ export function ScoutingPage() {
                 <strong className="scouting-screen__event-value">{currentEventLabel}</strong>
               </div>
               {activeStage === 'live_rally' ? renderInputLevelSwitch() : null}
+              {activeStage === 'live_rally' ? renderAppMenuToggle() : null}
             </div>
 
             {activeStage === 'live_rally' && !simpleInput ? (

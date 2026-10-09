@@ -1500,6 +1500,7 @@ export const en = {
   backupReminderNever: "No backup yet.",
   backupReminderDays: "Last backup: {{days}} days ago.",
   backupReminderHint: "Matches live only on this device; export all matches as .ovs and keep the file somewhere else (Files, cloud).",
+  liveAppMenu: 'Menu',
   manageActionShort: "More",
   phoneSetRally: "Set {{set}} · Rally {{rally}}",
   setSetupLineupCanStayEmpty: "You can start with empty positions. During the set, picking the jersey number of an empty position in tag input adds that player to the team and fills the position.",

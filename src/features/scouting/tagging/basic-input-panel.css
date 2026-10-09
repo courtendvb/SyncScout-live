@@ -110,7 +110,12 @@
 }
 
 .basic-input__undo {
+    /* Undo is rare: a compact button at the end of the row, not a full-width
+       bar under the point buttons where a hurried tap lands. */
+    justify-self: end;
+    min-width: 9rem;
     min-height: 2.9rem;
+    padding: 0 1.2rem;
     font-weight: 800;
 }
 
