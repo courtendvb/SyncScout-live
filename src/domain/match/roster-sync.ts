@@ -22,6 +22,19 @@ function normalizeTeamName(name: string | undefined): string {
   return (name ?? '').trim().toLowerCase();
 }
 
+/**
+ * Names given to an opponent left unnamed at match setup (the i18n key
+ * `opponentDefaultName` in each locale). Such an opponent is a different team
+ * every match, so it is never linked to a team archive: a jersey added in one
+ * match must not pick up the name of another opponent's player.
+ */
+export const UNNAMED_OPPONENT_NAMES = ['相手', 'Opponent'] as const;
+
+export function isUnnamedOpponentName(name: string | undefined): boolean {
+  const normalized = normalizeTeamName(name);
+  return UNNAMED_OPPONENT_NAMES.some((candidate) => candidate.toLowerCase() === normalized);
+}
+
 /** The match player ids that scouting events use. */
 export function getMatchRosterPlayerKey(player: MatchRosterPlayer): string {
   return player.archivedPlayerId ?? player.id;
@@ -85,6 +98,9 @@ export function addJerseyPlayerToSelection(
 export function isSelectionForArchivedTeam(selection: MatchTeamSelection, team: Pick<ArchivedTeam, 'id' | 'name'>): boolean {
   if (selection.archivedTeamId) {
     return selection.archivedTeamId === team.id;
+  }
+  if (isUnnamedOpponentName(selection.teamName)) {
+    return false;
   }
   return normalizeTeamName(selection.teamName) !== '' && normalizeTeamName(selection.teamName) === normalizeTeamName(team.name);
 }

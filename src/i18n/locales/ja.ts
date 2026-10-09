@@ -164,6 +164,8 @@ export const ja = {
   next: "次へ",
   creating: "作成中…",
   teams: "チーム",
+  opponentDefaultName: "相手",
+  opponentNamePlaceholder: "チーム名（空欄なら「相手」）",
   teamNamePlaceholder: "チーム名を入力",
   teamStaff: "スタッフ",
   roster: "名簿",
