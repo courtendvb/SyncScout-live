@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light" data-lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sync Scout Live — DataVolley がなくても、試合は記録できる</title>
+<meta name="description" content="Sync Scout Live は、タブレットやスマホで試合を記録できる無料のスカウティングアプリ。書き出した .dvw は SyncScout で YouTube 動画と同期し、チーム全員がラリーごとに見返せます。">
+<meta property="og:title" content="Sync Scout Live">
+<meta property="og:description" content="DataVolley がなくても、試合は記録できる。タブレットとスマホで使える無料のスカウティングアプリ。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="intro/tag-ja.jpg">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Tokens and components follow syncscout.courtend.net, so the two pages read as one product family. */
+  :root{
+    --paper:#FAFAF8; --ink:#16181D; --muted:#6B6E76; --line:#E6E5DE;
+    --accent:#2F5BEA; --accent-soft:#E8EDFD; --card:#FFFFFF; --live:#27C28A;
+    --live-soft:#E3F7EF; --red:#D93F3F;
+    --shadow:0 1px 2px rgba(20,22,26,.04),0 12px 40px rgba(20,22,26,.06);
+    --maxw:1080px;
+  }
+  [data-theme="dark"]{
+    --paper:#0E0F12; --ink:#ECEDEF; --muted:#9A9DA6; --line:#23252B;
+    --accent:#6E8BFF; --accent-soft:#1A1F33; --card:#15171C; --live:#3BD79C;
+    --live-soft:#13271F; --red:#F07171;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 16px 48px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Inter","Noto Sans JP",system-ui,sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased; transition:background .3s ease,color .3s ease;
+  }
+  [data-lang="ja"] body,[data-lang="ja"]{font-family:"Noto Sans JP","Inter",system-ui,sans-serif}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px}
+  h1,h2,h3{font-family:"Space Grotesk","Noto Sans JP",sans-serif; font-weight:600; line-height:1.12; letter-spacing:-.02em; margin:0}
+  [data-lang="ja"] h1,[data-lang="ja"] h2,[data-lang="ja"] h3{font-family:"Noto Sans JP",sans-serif; font-weight:700; letter-spacing:0; line-height:1.25}
+  /* Break Japanese headings between phrases, not inside a word (where supported). */
+  [data-lang="ja"] h1,[data-lang="ja"] h2,[data-lang="ja"] h3{word-break:auto-phrase}
+  a{color:inherit}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .eyebrow{font-family:"JetBrains Mono",monospace; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+
+  nav{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:color-mix(in srgb,var(--paper) 82%,transparent); border-bottom:1px solid var(--line)}
+  .nav-in{display:flex; align-items:center; justify-content:space-between; height:60px; gap:16px}
+  .brand{font-family:"Space Grotesk",sans-serif; font-weight:700; font-size:1.3rem; letter-spacing:-.02em; display:flex; align-items:center; gap:9px; white-space:nowrap; flex-shrink:0; text-decoration:none}
+  .brand .dot{width:9px; height:9px; border-radius:50%; background:var(--accent)}
+  .brand .live{font-family:"JetBrains Mono",monospace; font-size:.66rem; font-weight:500; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--live); border:1px solid color-mix(in srgb,var(--live) 45%,transparent); border-radius:999px; padding:2px 8px; display:inline-flex; align-items:center; gap:6px}
+  .brand .live::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--live); animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--live) 50%,transparent)}50%{box-shadow:0 0 0 4px transparent}}
+  .nav-links{display:flex; align-items:center; gap:22px; font-size:.9rem}
+  .nav-links a{color:var(--muted); text-decoration:none; transition:color .2s; white-space:nowrap}
+  .nav-links a:hover{color:var(--ink)}
+  .lang{display:inline-flex; border:1px solid var(--line); border-radius:9px; overflow:hidden}
+  .lang button{background:none; border:0; padding:6px 11px; font-size:.78rem; color:var(--ink); font-weight:500; cursor:pointer; font-family:inherit}
+  .lang button.on{background:var(--accent); color:#fff}
+  .theme-btn{background:none; border:1px solid var(--line); color:var(--ink); cursor:pointer; width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-family:inherit}
+  @media(max-width:900px){ .nav-links a.navlink{display:none} }
+  @media(max-width:760px){ .nav-links{gap:10px} .btn-primary.nav-cta{padding:6px 12px; font-size:.78rem} }
+  @media(max-width:480px){
+    nav .wrap{padding:0 14px}
+    .nav-links{gap:8px}
+    .brand{font-size:1.05rem; gap:7px}
+    .brand .live{display:none}
+    .lang button{padding:5px 8px; font-size:.72rem}
+    .theme-btn{width:30px; height:30px}
+  }
+  @media(max-width:380px){ nav .brand-name{display:none} }
+
+  .btn{display:inline-flex; align-items:center; gap:8px; font-weight:500; font-size:.92rem; padding:11px 18px; border-radius:10px; text-decoration:none; border:1px solid transparent; cursor:pointer; transition:transform .15s ease,background .2s,border-color .2s,box-shadow .2s; font-family:inherit}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent); color:#fff !important; box-shadow:0 1px 2px rgba(47,91,234,.25),0 4px 14px rgba(47,91,234,.22)}
+  .btn-primary:hover{transform:translateY(-1px); box-shadow:0 2px 4px rgba(47,91,234,.28),0 8px 24px rgba(47,91,234,.32); filter:brightness(1.06)}
+  .btn-ghost{border-color:var(--line); color:var(--ink); background:transparent}
+  .btn-ghost:hover{border-color:var(--ink); background:color-mix(in srgb,var(--ink) 4%,transparent)}
+
+  .hero{padding:84px 24px 40px; position:relative}
+  .hero-bg{position:absolute; inset:0; z-index:-1; overflow:hidden; pointer-events:none}
+  .hero-bg::before{content:""; position:absolute; inset:0;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:56px 56px; opacity:.5;
+    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 20%,transparent 75%);
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,#000 20%,transparent 75%)}
+  .hero-bg::after{content:""; position:absolute; top:-220px; left:50%; transform:translateX(-50%);
+    width:820px; height:520px; border-radius:50%;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--live) 12%,transparent),transparent); filter:blur(10px)}
+  .hero .eyebrow{margin-bottom:20px; display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:999px; padding:6px 14px; background:color-mix(in srgb,var(--card) 70%,transparent)}
+  .hero .eyebrow::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--live); box-shadow:0 0 0 3px color-mix(in srgb,var(--live) 25%,transparent)}
+  .hero h1{font-size:clamp(2.3rem,6vw,4rem); max-width:17ch}
+  [data-lang="ja"] .hero h1{max-width:100%; font-size:clamp(2rem,5.2vw,3.5rem)}
+  .hero h1 em{font-style:normal; color:var(--accent)}
+  .nw{white-space:nowrap}
+  @media(max-width:480px){ [data-lang="ja"] .hero h1{font-size:1.75rem} }
+  .hero p.lead{font-size:1.12rem; color:var(--muted); max-width:54ch; margin:22px 0 30px}
+  .hero-cta{display:flex; gap:12px; flex-wrap:wrap}
+  .hero-note{margin-top:16px; font-size:.82rem; color:var(--muted)}
+  .br-sp{display:none}
+  @media(max-width:480px){
+    .br-sp{display:inline}
+    .hero .eyebrow{font-size:.62rem; letter-spacing:.08em; padding:6px 12px}
+    .hero-cta .btn{justify-content:center}
+    .hero-cta .btn-primary{flex:1 0 100%}
+    .hero-cta .btn-ghost{flex:1 1 0; white-space:nowrap}
+  }
+  @media(max-width:760px){
+    .hero{padding:52px 20px 28px}
+    .hero p.lead{font-size:1rem}
+  }
+
+  /* App screenshots in a plain tablet frame. Each image exists in Japanese and English. */
+  .device{margin:60px auto 0; max-width:960px; border-radius:26px; padding:14px; background:#16181D; box-shadow:var(--shadow); border:1px solid var(--line)}
+  .device img{display:block; width:100%; height:auto; border-radius:14px}
+  .device--phone{max-width:640px; border-radius:28px; padding:12px 16px}
+  [data-lang="ja"] .shot-en,[data-lang="en"] .shot-ja{display:none !important}
+  .device-caption{text-align:center; font-size:.85rem; color:var(--muted); margin-top:14px}
+  @media(max-width:760px){ .device{margin-top:36px; padding:8px; border-radius:16px} .device img{border-radius:9px} }
+
+  section{padding:72px 0; border-top:1px solid var(--line)}
+  .sec-head{max-width:62ch; margin-bottom:44px}
+  .sec-head h2{font-size:clamp(1.7rem,3.5vw,2.4rem); margin-top:14px}
+  [data-lang="ja"] .sec-head h2{font-size:clamp(1.5rem,3.2vw,2.1rem)}
+  .sec-head p{color:var(--muted); margin:14px 0 0}
+
+  .features{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  @media(max-width:780px){ .features{grid-template-columns:1fr} }
+  .feat{border:1px solid var(--line); border-radius:14px; padding:22px; background:var(--card); transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+  .feat:hover{transform:translateY(-3px); box-shadow:var(--shadow); border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+  .tool-ic{width:46px; height:46px; border-radius:11px; background:var(--accent-soft); color:var(--accent); display:grid; place-items:center; margin-bottom:16px}
+  .tool-ic svg{width:24px; height:24px; display:block}
+  .feat h3{font-size:1.1rem; margin-bottom:8px}
+  .feat p{margin:0; color:var(--muted); font-size:.93rem}
+
+  /* The two input modes, side by side like the plans on syncscout.courtend.net. */
+  .modes{display:grid; grid-template-columns:repeat(2,1fr); gap:20px; align-items:start}
+  @media(max-width:780px){ .modes{grid-template-columns:1fr} }
+  .mode{border:1px solid var(--line); border-radius:16px; padding:30px; background:var(--card); position:relative; transition:transform .25s ease,box-shadow .25s ease}
+  .mode:hover{transform:translateY(-3px); box-shadow:var(--shadow)}
+  .mode.feat-mode{border-color:var(--accent);
+    background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 5%,var(--card)),var(--card) 45%);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 12%,transparent),var(--shadow)}
+  .mode .tag{position:absolute; top:-11px; left:24px; background:var(--accent); color:#fff; font-size:.7rem; letter-spacing:.06em; text-transform:uppercase; padding:4px 10px; border-radius:20px; font-family:"JetBrains Mono",monospace}
+  .mode .tag.tag-live{background:var(--live)}
+  .mode .who{font-size:.85rem; color:var(--muted)}
+  .mode h3{font-size:1.5rem; margin:6px 0 4px}
+  .mode .taps{font-family:"JetBrains Mono",monospace; font-size:.8rem; color:var(--accent)}
+  .mode ul{list-style:none; padding:0; margin:18px 0 0; font-size:.92rem}
+  .mode li{padding:7px 0 7px 24px; position:relative}
+  .mode li::before{content:"→"; position:absolute; left:0; color:var(--accent)}
+  .mode .mini{margin-top:20px; border-radius:12px; overflow:hidden; border:1px solid var(--line)}
+  .mode .mini img{display:block; width:100%; height:auto}
+
+  .grade{display:flex; flex-wrap:wrap; gap:6px; margin-top:18px}
+  .grade span{font-family:"JetBrains Mono",monospace; font-size:.8rem; border:1px solid var(--line); border-radius:8px; padding:4px 9px; background:var(--paper)}
+  .grade span b{margin-right:6px}
+  .grade .bad{border-color:color-mix(in srgb,var(--red) 55%,var(--line)); color:var(--red)}
+  .grade .good{border-color:color-mix(in srgb,var(--live) 55%,var(--line)); color:var(--live)}
+
+  .flow-fig{margin:0 auto 40px; max-width:700px}
+  .flow-fig svg{width:100%; height:auto; display:block; overflow:visible}
+  .flow-fig .badge{fill:var(--accent-soft); stroke:var(--line); stroke-width:1}
+  .flow-fig .badge.live{fill:var(--live-soft)}
+  .flow-fig .ico{fill:none; stroke:var(--accent); stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+  .flow-fig .ico.live{stroke:var(--live)}
+  .flow-fig .conn{fill:none; stroke:var(--muted); stroke-width:2; stroke-dasharray:4 5}
+  .flow-fig .ah{fill:none; stroke:var(--muted); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round}
+  .flow-fig .ft{fill:var(--ink); font-size:14px; font-weight:600; font-family:"Space Grotesk","Noto Sans JP",sans-serif}
+  .flow-fig .fs{fill:var(--muted); font-size:12px; font-family:"JetBrains Mono",monospace}
+  [data-lang="ja"] .flow-fig .ft{font-family:"Noto Sans JP",sans-serif; font-weight:700}
+
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:0}
+  @media(max-width:780px){ .steps{grid-template-columns:1fr} }
+  .step{padding:22px 26px 22px 0; border-top:2px solid var(--ink); transition:border-color .3s ease}
+  .step:hover{border-top-color:var(--accent)}
+  .step .n{font-family:"JetBrains Mono",monospace; font-size:.8rem; color:var(--accent); padding-top:10px}
+  .step h3{font-size:1.12rem; margin:14px 0 8px}
+  .step p{margin:0; color:var(--muted); font-size:.93rem}
+
+  .compat{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--card)}
+  @media(max-width:780px){ .compat{grid-template-columns:repeat(2,1fr)} }
+  .compat > div{padding:20px 22px; border-right:1px solid var(--line); border-bottom:1px solid var(--line)}
+  .compat .k{font-family:"JetBrains Mono",monospace; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .compat .v{font-weight:600; margin-top:6px}
+
+  .faq-list{max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:14px}
+  .faq-item{border:1px solid var(--line); border-radius:12px; background:var(--card); overflow:hidden; transition:border-color .3s, box-shadow .3s}
+  .faq-item summary{padding:20px 24px; font-size:1.05rem; font-weight:600; cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center; transition:background .2s, color .2s}
+  .faq-item summary::-webkit-details-marker{display:none}
+  .faq-item summary:hover{background:var(--accent-soft); color:var(--accent)}
+  .faq-item[open]{border-color:var(--accent); box-shadow:0 4px 16px rgba(47,91,234,0.06)}
+  .faq-item[open] summary{border-bottom:1px solid var(--line); background:var(--paper); color:var(--accent)}
+  .faq-icon{width:20px; height:20px; flex-shrink:0; margin-left:16px; color:var(--muted); transition:transform .3s ease, color .2s}
+  .faq-item[open] .faq-icon{transform:rotate(45deg); color:var(--accent)}
+  .faq-item p{margin:0; padding:20px 24px; color:var(--muted); font-size:.95rem; line-height:1.7}
+
+  .final-cta{text-align:center; padding:88px 0}
+  .final-cta .cta-box{max-width:760px; margin:0 auto; border:1px solid var(--line); border-radius:22px; padding:56px 32px; background:var(--card); position:relative; overflow:hidden; box-shadow:var(--shadow)}
+  .final-cta .cta-box::before{content:""; position:absolute; top:-140px; left:50%; transform:translateX(-50%); width:560px; height:280px; border-radius:50%;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--live) 14%,transparent),transparent); pointer-events:none}
+  .final-cta h2{font-size:clamp(1.6rem,3.2vw,2.2rem); position:relative}
+  .final-cta p{color:var(--muted); max-width:46ch; margin:14px auto 28px; position:relative}
+  .final-cta .hero-cta{justify-content:center; position:relative}
+
+  footer{border-top:1px solid var(--line); padding:54px 0 40px; margin-top:20px}
+  .foot-in{display:flex; justify-content:space-between; gap:30px; flex-wrap:wrap}
+  .foot-links{display:flex; gap:30px; flex-wrap:wrap; font-size:.9rem}
+  .foot-col{display:flex; flex-direction:column; gap:10px}
+  .foot-col .lbl{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-family:"JetBrains Mono",monospace}
+  .foot-col a{color:var(--ink); text-decoration:none; opacity:.8}
+  .foot-col a:hover{opacity:1; color:var(--accent)}
+  .foot-bottom{margin-top:40px; padding-top:20px; border-top:1px solid var(--line); font-size:.82rem; color:var(--muted); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px}
+
+  .reveal{opacity:0; transform:translateY(18px); transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1; transform:none}
+  @media(prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} html{scroll-behavior:auto} }
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><span class="dot"></span><span class="brand-name">Sync Scout</span><span class="live">Live</span></a>
+    <div class="nav-links">
+      <a class="navlink" href="#features" data-i18n="nav.features">特徴</a>
+      <a class="navlink" href="#modes" data-i18n="nav.modes">入力モード</a>
+      <a class="navlink" href="#how" data-i18n="nav.how">使い方</a>
+      <a class="navlink" href="#faq" data-i18n="nav.faq">よくある質問</a>
+      <div class="lang" role="group" aria-label="Language"><button data-lang="en">EN</button><button data-lang="ja" class="on">JP</button></div>
+      <button class="theme-btn" id="theme" aria-label="Toggle dark mode">◐</button>
+      <a class="btn btn-primary nav-cta" href="./" data-i18n="nav.cta">アプリを開く</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap" id="top">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="eyebrow" data-i18n="hero.eyebrow">SyncScout の入力ツール · 無料</div>
+  <h1 data-i18n="hero.h1"><span class="nw">DataVolley がなくても、</span><br><em class="nw">試合は記録できる。</em></h1>
+  <p class="lead" data-i18n="hero.lead">Sync Scout Live は、タブレットやスマホでその場で試合を記録するスカウティングアプリです。記録した試合は <span class="mono">.dvw</span> として SyncScout に送れば、YouTube の試合動画とつながり、チーム全員がラリーごとに見返せます。</p>
+  <div class="hero-cta">
+    <a href="./" class="btn btn-primary" data-i18n="hero.cta1">無料でアプリを開く →</a>
+    <a href="#modes" class="btn btn-ghost" data-i18n="hero.cta2">入力のしかたを見る</a>
+    <a href="https://syncscout.courtend.net/" class="btn btn-ghost" data-i18n="hero.cta3">SyncScout とは</a>
+  </div>
+  <p class="hero-note" data-i18n="hero.note">インストール不要。ブラウザで開くだけで使え、ホーム画面に追加すればネットのない体育館でも動きます。</p>
+
+  <figure class="device" style="margin-bottom:0">
+    <img class="shot-ja" src="intro/tag-ja.jpg" width="2360" height="1640" alt="タグ入力の画面。左に自チームの6人、右にスキルと評価のマス目" loading="eager">
+    <img class="shot-en" src="intro/tag-en.jpg" width="2360" height="1640" alt="The tag input screen: your six players on the left, the skill and grade grid on the right" loading="lazy">
+  </figure>
+  <p class="device-caption" data-i18n="hero.caption">iPad でのタグ入力。選手とマスを押すだけで、1プレーが記録されます。</p>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="feat.eyebrow">What it does</div>
+      <h2 data-i18n="feat.h2">会場で、ボタンだけで。<br>見返せるデータを残す。</h2>
+    </div>
+    <div class="features">
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><path d="M15.5 17.5l2 2 3.5-4"/></svg></div>
+        <h3 data-i18n="f1.h3">2タップで1プレー</h3>
+        <p data-i18n="f1.p">選手を押して、「スキル × 評価」のマスを押すだけ。テンキーでコードを打つ必要はありません。サーブとセットはマスを押すだけで、サーバーとセッターが自動で入ります。</p>
+      </div>
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+        <h3 data-i18n="f2.h3">背番号だけで始められる</h3>
+        <p data-i18n="f2.p">選手名の登録は不要。スタメンは「ポジション → 背番号」のタップで入ります。相手チームは名前がなくても始められます。</p>
+      </div>
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 4 22 9 17 9"/><polyline points="2 20 2 15 7 15"/><path d="M4.6 9a8 8 0 0 1 13.3-3L22 9"/><path d="M2 15l4.1 3.9A8 8 0 0 0 19.4 16"/></svg></div>
+        <h3 data-i18n="f3.h3">ローテーションは自動</h3>
+        <p data-i18n="f3.p">サイドアウトのたびにローテーションが回り、次のサーバーを表示します。記録にもローテーションが残るので、SyncScout でローテーション別のサイドアウト・ブレイクがそのまま見られます。</p>
+      </div>
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.2L15 12L10 14.8Z" fill="currentColor"/></svg></div>
+        <h3 data-i18n="f4.h3">ラリーの部分だけ再生</h3>
+        <p data-i18n="f4.p">サーブと得点を押した時刻がそのままラリーの始まりと終わりになります。SyncScout では、ラリーの間を飛ばして試合を見返せます。</p>
+      </div>
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/><path d="M3 3l18 18"/></svg></div>
+        <h3 data-i18n="f5.h3">オフラインで動く</h3>
+        <p data-i18n="f5.p">一度開けばアプリ全体が端末に保存され、電波の届かない体育館でも使えます。記録は端末の中にだけ保存され、送るまで外に出ません。</p>
+      </div>
+      <div class="feat">
+        <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg></div>
+        <h3 data-i18n="f6.h3">SyncScout にそのまま送る</h3>
+        <p data-i18n="f6.p">YouTube の URL と、最初のサーブの動画上の時刻を入れて送るだけ。全プレーの時刻が動画に合わせて書き出されます。DataVolley 互換の <span class="mono">.dvw</span> としても保存できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="modes">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="modes.eyebrow">Two ways to scout</div>
+      <h2 data-i18n="modes.h2">記録の細かさは、2つから選べる。</h2>
+      <p data-i18n="modes.p">試合中でも切り替えられます。はじめての人は「かんたん」から、慣れてきたら「タグ」へ。</p>
+    </div>
+    <div class="modes">
+      <div class="mode">
+        <span class="tag tag-live" data-i18n="modes.basic.tag">はじめての人に</span>
+        <div class="who" data-i18n="modes.basic.who">サーブと得点だけ</div>
+        <h3 data-i18n="modes.basic.h3">かんたん</h3>
+        <div class="taps" data-i18n="modes.basic.taps">1ラリー = 2タップ</div>
+        <ul>
+          <li data-i18n="modes.basic.l1">サーブを打ったら「サーブ」、ラリーが終わったら得点したチームを押すだけ</li>
+          <li data-i18n="modes.basic.l2">サーブボタンにはいまのサーバーの背番号が出て、ローテーションに合わせて変わる</li>
+          <li data-i18n="modes.basic.l3">保護者やマネージャーでもすぐ使え、SyncScout でラリーごとの再生ができる</li>
+        </ul>
+        <div class="mini">
+          <img class="shot-ja" src="intro/basic-ja.jpg" width="1688" height="780" alt="かんたん入力の画面。サーブボタンと、2チームの得点ボタン" loading="lazy">
+          <img class="shot-en" src="intro/basic-en.jpg" width="1688" height="780" alt="The basic input screen: a serve button and a point button for each team" loading="lazy">
+        </div>
+      </div>
+      <div class="mode feat-mode">
+        <span class="tag" data-i18n="modes.tag.tag">プレーごとに</span>
+        <div class="who" data-i18n="modes.tag.who">誰が・何を・どうだったか</div>
+        <h3 data-i18n="modes.tag.h3">タグ</h3>
+        <div class="taps" data-i18n="modes.tag.taps">1プレー = 2タップ</div>
+        <ul>
+          <li data-i18n="modes.tag.l1">選手 → マス（スキル × 評価）の順に押す。マスを先に押してもよい</li>
+          <li data-i18n="modes.tag.l2">記録するのは自チームだけ（相手は「相手のミス」「相手の得点」で済む）か、両チームかを選べる</li>
+          <li data-i18n="modes.tag.l3">次に来そうなスキルの行が光る。球種・ブロック枚数・セッターコールも「詳細」から</li>
+        </ul>
+        <div class="grade" aria-label="Grades">
+          <span class="bad"><b>=</b><span data-i18n="grade.err">ミス</span></span>
+          <span><b>/</b><span data-i18n="grade.slash">返球など</span></span>
+          <span><b>-</b><span data-i18n="grade.minus">悪い</span></span>
+          <span><b>!</b><span data-i18n="grade.ex">まずまず</span></span>
+          <span><b>+</b><span data-i18n="grade.plus">良い</span></span>
+          <span class="good"><b>#</b><span data-i18n="grade.hash">決定・完璧</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="how.eyebrow">How it works</div>
+      <h2 data-i18n="how.h2">記録して、送って、チームで見返す。</h2>
+    </div>
+    <figure class="flow-fig" aria-hidden="true">
+      <svg viewBox="0 0 700 150">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="ah" d="M1 1L8 5L1 9"/></marker></defs>
+        <rect class="badge live" x="55" y="10" width="76" height="76" rx="20"/>
+        <g class="ico live" transform="translate(73,28)"><rect x="2" y="5" width="36" height="28" rx="4"/><path d="M14 33v5M26 33v5M10 38h20"/><circle cx="20" cy="19" r="3.5"/></g>
+        <rect class="badge" x="312" y="10" width="76" height="76" rx="20"/>
+        <g class="ico" transform="translate(330,28)"><path d="M6 22l14-14 14 14"/><path d="M20 8v26"/><path d="M4 36h32"/></g>
+        <rect class="badge" x="569" y="10" width="76" height="76" rx="20"/>
+        <g class="ico" transform="translate(587,28)"><rect x="2" y="6" width="36" height="24" rx="4"/><path d="M17 13l8 5-8 5z"/><circle cx="8" cy="38" r="2"/><circle cx="20" cy="38" r="2"/><circle cx="32" cy="38" r="2"/></g>
+        <path class="conn" d="M142 48H300" marker-end="url(#ah)"/>
+        <path class="conn" d="M399 48H557" marker-end="url(#ah)"/>
+        <text class="fs" x="221" y="38" text-anchor="middle">.dvw</text>
+        <text class="fs" x="478" y="38" text-anchor="middle">YouTube</text>
+        <text class="ft" x="93" y="116" text-anchor="middle">Sync Scout Live</text>
+        <text class="ft" x="350" y="116" text-anchor="middle">SyncScout</text>
+        <text class="ft" x="607" y="116" text-anchor="middle" data-i18n="how.fig3">チーム</text>
+      </svg>
+    </figure>
+    <div class="steps">
+      <div class="step">
+        <div class="n">01</div>
+        <h3 data-i18n="s1.h3">会場で記録する</h3>
+        <p data-i18n="s1.p">試合を作り、セットの初めにスタメンを背番号で入れて、かんたんかタグで記録します。端末は横向きで使います。</p>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <h3 data-i18n="s2.h3">SyncScout に送る</h3>
+        <p data-i18n="s2.p">試合後に「SyncScout に送る」を押し、YouTube の URL と最初のサーブの時刻を入れます。ログインは SyncScout と同じチームID と合言葉です。</p>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <h3 data-i18n="s3.h3">チームで見返す</h3>
+        <p data-i18n="s3.p">試合は SyncScout のチームに登録され、コーチも選手もそれぞれの端末から、プレーやラリーを選んで動画を見られます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="devices">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow" data-i18n="dev.eyebrow">Where it runs</div>
+      <h2 data-i18n="dev.h2">手元の端末で、すぐに。</h2>
+    </div>
+    <div class="compat">
+      <div><div class="k" data-i18n="dev.k1">端末</div><div class="v" data-i18n="dev.v1">iPad・Android タブレット・スマホ</div></div>
+      <div><div class="k" data-i18n="dev.k2">ブラウザ</div><div class="v" data-i18n="dev.v2">Safari・Chrome（インストール不要）</div></div>
+      <div><div class="k" data-i18n="dev.k3">画面</div><div class="v" data-i18n="dev.v3">横向き</div></div>
+      <div><div class="k" data-i18n="dev.k4">書き出し</div><div class="v"><span class="mono">.dvw</span> · <span class="mono">.ovs</span></div></div>
+    </div>
+    <figure class="device device--phone">
+      <img class="shot-ja" src="intro/basic-ja.jpg" width="1688" height="780" alt="スマホを横向きにした、かんたん入力の画面" loading="lazy">
+      <img class="shot-en" src="intro/basic-en.jpg" width="1688" height="780" alt="The basic input screen on a phone held sideways" loading="lazy">
+    </figure>
+    <p class="device-caption" data-i18n="dev.caption">スマホを横向きにすれば、ベンチからでも記録できます。</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head" style="margin-left:auto; margin-right:auto; text-align:center">
+      <div class="eyebrow" data-i18n="faq.eyebrow">FAQ</div>
+      <h2 data-i18n="faq.h2">よくある質問</h2>
+    </div>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary><span data-i18n="q1">料金はかかりますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a1">Sync Scout Live は無料で使えます。記録した試合をチームで動画と一緒に見返すには、SyncScout のチーム登録が必要です。料金は SyncScout のサイトをご覧ください。</p>
+      </details>
+      <details class="faq-item">
+        <summary><span data-i18n="q2">DataVolley や VolleyStation を持っていなくても使えますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a2">はい。そのためのアプリです。書き出す <span class="mono">.dvw</span> は DataVolley 互換の形式なので、SyncScout でもほかの DataVolley 対応ツールでも読み込めます。</p>
+      </details>
+      <details class="faq-item">
+        <summary><span data-i18n="q3">試合のデータはどこに保存されますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a3">使っている端末のブラウザの中だけです。サーバーには送られません。例外は「SyncScout に送る」を押したときで、その試合だけがログインしたチームに送られます。ブラウザのデータを消すと記録も消えるので、「データ」画面からこまめにバックアップしてください。</p>
+      </details>
+      <details class="faq-item">
+        <summary><span data-i18n="q4">相手チームのプレーも記録できますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a4">できます。タグ入力の「詳細」にある「記録するチーム」で「両チーム」を選ぶと、12人を並べてどちらのプレーも記録できます。自チームだけのときも、相手のサーブは自動で記録されます。</p>
+      </details>
+      <details class="faq-item">
+        <summary><span data-i18n="q5">試合の途中で動画は必要ですか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a5">いりません。会場では記録するだけで、動画は試合後に YouTube へ上げてください。送るときに最初のサーブの時刻を入れれば、全プレーの時刻が動画に合います。ずれたときは −15〜+15 秒で微調整できます。</p>
+      </details>
+      <details class="faq-item">
+        <summary><span data-i18n="q6">英語でも使えますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a6">はい。アプリのメニューバー右端の「EN / JP」で切り替えられます。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta">
+  <div class="wrap">
+    <div class="cta-box">
+      <h2 data-i18n="cta.h2">次の試合から、記録を始めよう。</h2>
+      <p data-i18n="cta.p">登録もインストールもいりません。タブレットかスマホでアプリを開けば、すぐに使えます。</p>
+      <div class="hero-cta">
+        <a href="./" class="btn btn-primary" data-i18n="cta.b1">無料でアプリを開く →</a>
+        <a href="https://syncscout.courtend.net/" class="btn btn-ghost" data-i18n="cta.b2">SyncScout を見る</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-in">
+      <div class="foot-col" style="max-width:300px">
+        <div class="brand"><span class="dot"></span><span class="brand-name">Sync Scout</span><span class="live">Live</span></div>
+        <p style="color:var(--muted); font-size:.9rem; margin:6px 0 0" data-i18n="foot.tagline">会場で記録して、チームで見返す。</p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col">
+          <span class="lbl" data-i18n="foot.product">Product</span>
+          <a href="./" data-i18n="foot.app">アプリを開く</a>
+          <a href="#modes" data-i18n="nav.modes">入力モード</a>
+          <a href="#faq" data-i18n="nav.faq">よくある質問</a>
+        </div>
+        <div class="foot-col">
+          <span class="lbl">SyncScout</span>
+          <a href="https://syncscout.courtend.net/" data-i18n="foot.ss">SyncScout について</a>
+          <a href="https://app.syncscout.courtend.net/" data-i18n="foot.ssapp">SyncScout を開く</a>
+        </div>
+        <div class="foot-col">
+          <span class="lbl" data-i18n="foot.source">Source</span>
+          <a href="https://github.com/courtendvb/SyncScout-live">GitHub</a>
+          <a href="https://github.com/napo/openvolleyscout">OpenVolleyScout</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="yr">2026</span> CourtEnd</span>
+      <span data-i18n="foot.license">OpenVolleyScout（© Maurizio Napolitano）をもとに開発。AGPL-3.0 で公開しています。</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Japanese is written in the page; English replaces it through data-i18n.
+  const T = { ja: {}, en: {
+    "nav.features":"Features","nav.modes":"Input modes","nav.how":"How it works","nav.faq":"FAQ","nav.cta":"Open the app",
+    "hero.eyebrow":"The input tool for SyncScout · Free",
+    "hero.h1":"No DataVolley? <em>Scout the match anyway.</em>",
+    "hero.lead":"Sync Scout Live records a volleyball match right at the venue, on a tablet or a phone. Send it to SyncScout as a <span class=\"mono\">.dvw</span> and it lines up with your YouTube match video, so the whole team can review it rally by rally.",
+    "hero.cta1":"Open the app — free →","hero.cta2":"See how you scout","hero.cta3":"What is SyncScout",
+    "hero.note":"Nothing to install. It runs in the browser, and once added to the home screen it works in gyms with no signal.",
+    "hero.caption":"Tag input on an iPad: tap a player and a cell, and the play is recorded.",
+    "feat.eyebrow":"What it does",
+    "feat.h2":"Buttons only, right at the venue.<br>Data you can actually review.",
+    "f1.h3":"Two taps per play",
+    "f1.p":"Tap the player, then the skill × grade cell. No codes to type on a keypad. Serves and sets need only the cell: the server and the setter fill themselves in.",
+    "f2.h3":"Start with jersey numbers",
+    "f2.p":"No names needed. The lineup is a tap on a position, then on a jersey. The opponent doesn't even need a name.",
+    "f3.h3":"Rotations take care of themselves",
+    "f3.p":"Every side-out rotates the lineup and shows the next server. The rotation is saved with each rally, so SyncScout's side-out and break by rotation works as is.",
+    "f4.h3":"Watch only the rallies",
+    "f4.p":"The serve tap and the point tap mark where each rally starts and ends, so SyncScout can play the match without the time in between.",
+    "f5.h3":"Works offline",
+    "f5.p":"Open it once and the whole app is stored on the device, ready for gyms without signal. Your data stays on the device until you send it.",
+    "f6.h3":"Straight to SyncScout",
+    "f6.p":"Enter the YouTube URL and the video time of the first serve, and every play is timed to the video. It also saves a DataVolley-compatible <span class=\"mono\">.dvw</span>.",
+    "modes.eyebrow":"Two ways to scout",
+    "modes.h2":"Pick how much detail to record.",
+    "modes.p":"You can switch during a match. Start with Basic, move to Tags when you're ready.",
+    "modes.basic.tag":"For first-timers","modes.basic.who":"Serves and points only","modes.basic.h3":"Basic","modes.basic.taps":"1 rally = 2 taps",
+    "modes.basic.l1":"Tap Serve when the ball is served, then the team that won the rally",
+    "modes.basic.l2":"The serve button shows the current server's jersey and follows the rotation",
+    "modes.basic.l3":"Anyone on the bench can do it, and SyncScout still plays the match rally by rally",
+    "modes.tag.tag":"Play by play","modes.tag.who":"Who, what, how well","modes.tag.h3":"Tags","modes.tag.taps":"1 play = 2 taps",
+    "modes.tag.l1":"Tap a player, then a cell (skill × grade) — or the cell first",
+    "modes.tag.l2":"Record your team only (the opponent is just “opponent error” or “opponent point”) or both teams",
+    "modes.tag.l3":"The skill most likely next is highlighted. Ball type, blockers and setter calls are under Details",
+    "grade.err":"Error","grade.slash":"Overpass etc.","grade.minus":"Poor","grade.ex":"OK","grade.plus":"Good","grade.hash":"Point / perfect",
+    "how.eyebrow":"How it works","how.h2":"Record it, send it, review it as a team.","how.fig3":"Team",
+    "s1.h3":"Record at the venue","s1.p":"Create the match, enter each set's lineup by jersey, and scout in Basic or Tags. The device is used sideways.",
+    "s2.h3":"Send to SyncScout","s2.p":"After the match, tap “Send to SyncScout” and enter the YouTube URL and the time of the first serve. You sign in with the same team ID and passphrase as SyncScout.",
+    "s3.h3":"Review as a team","s3.p":"The match is added to your SyncScout team. Coaches and players open it on their own devices and pick plays or rallies to watch.",
+    "dev.eyebrow":"Where it runs","dev.h2":"On the devices you already have.",
+    "dev.k1":"Devices","dev.v1":"iPad, Android tablets, phones","dev.k2":"Browser","dev.v2":"Safari, Chrome (no install)","dev.k3":"Screen","dev.v3":"Landscape","dev.k4":"Export",
+    "dev.caption":"Turn a phone sideways and you can scout from the bench.",
+    "faq.eyebrow":"FAQ","faq.h2":"Questions",
+    "q1":"Does it cost anything?","a1":"Sync Scout Live is free. Reviewing matches with video as a team needs a SyncScout team; see the SyncScout site for pricing.",
+    "q2":"Can I use it without DataVolley or VolleyStation?","a2":"Yes — that's what it's for. The <span class=\"mono\">.dvw</span> it exports is DataVolley-compatible, so SyncScout and other DataVolley tools can read it.",
+    "q3":"Where is the match data stored?","a3":"Only in the browser on your device; nothing goes to a server. The exception is “Send to SyncScout”, which sends that one match to the team you signed in with. Clearing the browser's data deletes your records too, so back up often from the Data page.",
+    "q4":"Can I record the opponent's plays too?","a4":"Yes. Under Details in tag input, set “Teams to record” to both teams to see all twelve players and record either side. When you record only your team, the opponent's serves are still recorded automatically.",
+    "q5":"Do I need the video during the match?","a5":"No. At the venue you only record; upload the video to YouTube afterwards. Entering the time of the first serve when you send lines every play up with the video, and you can nudge it by −15 to +15 seconds.",
+    "q6":"Is it available in English?","a6":"Yes. Switch with “EN / JP” at the right end of the app's menu bar.",
+    "cta.h2":"Start scouting from your next match.","cta.p":"No sign-up, no install. Open the app on a tablet or phone and you're ready.",
+    "cta.b1":"Open the app — free →","cta.b2":"Visit SyncScout",
+    "foot.tagline":"Record at the venue, review as a team.","foot.product":"Product","foot.app":"Open the app","foot.ss":"About SyncScout","foot.ssapp":"Open SyncScout","foot.source":"Source",
+    "foot.license":"Based on OpenVolleyScout (© Maurizio Napolitano). Released under AGPL-3.0."
+  }};
+  // Keep the Japanese text written in the page so switching back restores it.
+  document.querySelectorAll('[data-i18n]').forEach(el => { T.ja[el.getAttribute('data-i18n')] = el.innerHTML; });
+
+  const TITLES = {
+    ja: 'Sync Scout Live — DataVolley がなくても、試合は記録できる',
+    en: 'Sync Scout Live — No DataVolley? Scout the match anyway.'
+  };
+
+  function setLang(lang){
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang;
+    document.title = TITLES[lang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const v = T[lang][el.getAttribute('data-i18n')];
+      if (v !== undefined) el.innerHTML = v;
+    });
+    document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+    try { localStorage.setItem('syncscout_lang', lang); } catch (e) {}
+  }
+  document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+  document.getElementById('theme').addEventListener('click', () => {
+    const root = document.documentElement;
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  });
+
+  (function(){
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+    const targets = document.querySelectorAll('.feat, .step, .mode, .faq-item, .sec-head, .final-cta .cta-box, .flow-fig, .compat');
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    targets.forEach((el, i) => {
+      el.classList.add('reveal');
+      el.style.transitionDelay = (i % 3) * 70 + 'ms';
+      io.observe(el);
+    });
+  })();
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // Same key name as syncscout.courtend.net uses for its own pages.
+  let saved = null;
+  try { saved = localStorage.getItem('syncscout_lang'); } catch (e) {}
+  setLang(saved || (navigator.language.startsWith('ja') ? 'ja' : 'en'));
+</script>
+</body>
+</html>
