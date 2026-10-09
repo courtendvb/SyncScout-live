@@ -20,6 +20,7 @@ iPad などのタブレットでの入力を前提に、ボタン中心の操作
 記録した試合は DataVolley 互換の `.dvw` として書き出せるほか、YouTube 動画と時刻を合わせて SyncScout に送信できます。
 
 - 公開 URL: https://courtendvb.github.io/SyncScout-live/
+- 紹介ページ: https://courtendvb.github.io/SyncScout-live/intro.html（`public/intro.html`。syncscout.courtend.net と同じデザイン、日本語・英語）
 - バージョン: 0.1.0（OpenVolleyScout 0.16.1 ベース）
 
 > [!NOTE]
