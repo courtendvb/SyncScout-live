@@ -238,7 +238,8 @@
 }
 
 .scouting-screen--phone .tag-input__footer {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.5rem;
 }
 
 .scouting-screen--phone .tag-input__point,
@@ -261,16 +262,16 @@
 @media (orientation: landscape) {
     .scouting-screen--phone .tag-input {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-        grid-auto-rows: auto;
-        align-items: start;
     }
 
     .scouting-screen--phone .tag-input__who,
     .scouting-screen--phone .tag-input__what {
-        display: grid;
-        grid-auto-rows: max-content;
         gap: 0.4rem;
-        min-width: 0;
+    }
+
+    .scouting-screen--phone .tag-input__topbar,
+    .scouting-screen--phone .tag-input__topbar > .tag-input__undo {
+        min-height: 2.2rem;
     }
 
     .scouting-screen--phone .tag-input__player {

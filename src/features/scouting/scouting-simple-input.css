@@ -108,6 +108,24 @@
 
 /* Tags / Court / Detailed switch, on the status line under the score header
    (set once per match, so it stays compact and out of the crowded header). */
+.scouting-screen__menu-toggle {
+    flex: 0 0 auto;
+    min-height: 2.2rem;
+    padding: 0 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    border-radius: 999px;
+    background: #fff;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.scouting-screen__menu-toggle[aria-pressed="true"] {
+    border-color: var(--color-primary, #4b61d1);
+    color: var(--color-primary, #4b61d1);
+}
+
 .scouting-screen__input-mode {
     display: inline-flex;
     flex: 0 0 auto;

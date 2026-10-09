@@ -364,6 +364,15 @@ input {
 
 /* App header */
 
+/* Live input: the menu bar is hidden (ScoutingPage, data-live-input). */
+:root[data-live-input] .app-header {
+    display: none;
+}
+
+:root[data-live-input] .scouting-app-shell {
+    grid-template-rows: minmax(0, 1fr);
+}
+
 .app-header {
     position: sticky;
     top: 0;

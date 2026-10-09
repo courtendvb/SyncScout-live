@@ -1479,6 +1479,7 @@ export const ja = {
   backupReminderNever: "まだ一度もバックアップしていません。",
   backupReminderDays: "最後のバックアップは {{days}} 日前です。",
   backupReminderHint: "試合データはこの端末の中にしかないため、全試合を .ovs で書き出して別の場所（ファイル・クラウドなど）に保存してください。",
+  liveAppMenu: "メニュー",
   manageActionShort: "その他",
   phoneSetRally: "第 {{set}} セット · ラリー {{rally}}",
   setSetupLineupCanStayEmpty: "空いたポジションのままでも始められます。試合中にタグ入力で空いたポジションの背番号を選ぶと、その選手がチームに追加され、ポジションが埋まります。",

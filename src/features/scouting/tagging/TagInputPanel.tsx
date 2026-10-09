@@ -531,6 +531,22 @@ export function TagInputPanel({
 
   const renderDetails = () => (
     <div className="tag-input__details" role="group" aria-label={t('tagDetails')}>
+      <div className="tag-input__detail-group tag-input__record-teams-group">
+        <span className="tag-input__detail-label">{t('tagRecordTeams')}</span>
+        <div className="tag-input__record-teams" role="group" aria-label={t('tagRecordTeams')}>
+          {(['home', 'away', 'both'] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={recordTeams === value ? 'is-selected' : ''}
+              aria-pressed={recordTeams === value}
+              onClick={() => onRecordTeamsChange(value)}
+            >
+              {value === 'both' ? t('tagRecordBoth') : teamName(value)}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="tag-input__detail-group" aria-label={t('ballType')}>
         {DATA_VOLLEY_BALL_TYPE_CODES.map((code) => (
           <button
@@ -631,9 +647,6 @@ export function TagInputPanel({
             <strong>{t('tagOpponentError')}</strong>
             <small>{t('pointForTeam', { team: teamName(ownSide) })}</small>
           </button>
-          <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
-            {t('undoAction')}
-          </button>
           <button type="button" className="tag-input__point tag-input__point--lost" onClick={() => finishRally(opposite(ownSide), 'opponent_point')}>
             <strong>{t('tagOpponentPoint')}</strong>
             <small>{t('pointForTeam', { team: teamName(opposite(ownSide)) })}</small>
@@ -645,9 +658,6 @@ export function TagInputPanel({
       <div className="tag-input__footer">
         <button type="button" className="tag-input__point" onClick={() => finishRally(leftTeamSide)}>
           {t('pointForTeam', { team: teamName(leftTeamSide) })}
-        </button>
-        <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
-          {t('undoAction')}
         </button>
         <button type="button" className="tag-input__point" onClick={() => finishRally(rightTeamSide)}>
           {t('pointForTeam', { team: teamName(rightTeamSide) })}
@@ -666,20 +676,9 @@ export function TagInputPanel({
     <section className={`tag-input tag-input--${ownSide ? 'one-team' : 'both-teams'}`} aria-label={t('tagInputTitle')}>
       {/* Who (players on court) and what (skill × grade, rally end): side by side in landscape. */}
       <div className="tag-input__who">
+        {/* The rally so far, with undo beside it: away from the rally-end buttons,
+            which are tapped every rally and must not sit next to an undo. */}
         <div className="tag-input__topbar">
-          <div className="tag-input__record-teams" role="group" aria-label={t('tagRecordTeams')}>
-            {(['home', 'away', 'both'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={recordTeams === value ? 'is-selected' : ''}
-                aria-pressed={recordTeams === value}
-                onClick={() => onRecordTeamsChange(value)}
-              >
-                {value === 'both' ? t('tagRecordBoth') : teamName(value)}
-              </button>
-            ))}
-          </div>
           <div className="tag-input__rally" aria-live="polite">
             {currentRallyTouches.map((touch) => {
               const jersey = getTeam(touch.teamSide).players.find((player) => player.id === touch.playerId)?.jerseyNumber;
@@ -690,6 +689,9 @@ export function TagInputPanel({
               );
             })}
           </div>
+          <button type="button" className="tag-input__undo" onClick={onUndo} disabled={!canUndo}>
+            {t('undoAction')}
+          </button>
         </div>
 
         <div className={`tag-court tag-court--${ownSide ? 'single' : 'horizontal'}`}>
@@ -704,7 +706,7 @@ export function TagInputPanel({
         <div className="tag-court__extras-row">
           {recordedSides.map((side) => renderTeamExtras(side))}
         </div>
-        {/* Rally end under the court, so the grid keeps the whole right-hand column. */}
+        {/* Rally end at the bottom edge, where the hands rest; the grid keeps the whole right-hand column. */}
         {renderFooter()}
       </div>
 
