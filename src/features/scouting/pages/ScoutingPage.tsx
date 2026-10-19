@@ -120,7 +120,7 @@ import { LIVE_SCOUTING_SMARTPHONE_LANDSCAPE_MAX_HEIGHT } from '../model/live-sco
 import { LiveScoutingVideoPanel, type LiveScoutingVideoPanelHandle } from '../live/video/LiveScoutingVideoPanel';
 import { TagInputPanel } from '../tagging/TagInputPanel';
 import { BasicInputPanel } from '../tagging/BasicInputPanel';
-import { AVAILABLE_INPUT_LEVELS, LANDSCAPE_ONLY_INPUT } from '../model/input-levels';
+import { getAvailableInputLevels, LANDSCAPE_ONLY_INPUT } from '../model/input-levels';
 import { playConfirmFeedback } from '@src/lib/utils/confirm-feedback';
 import '../scouting-screen.css';
 import '../scouting-simple-input.css';
@@ -220,10 +220,13 @@ export function ScoutingPage() {
   const inputLevel: 'basic' | 'tag' | 'court' | 'detailed' = inputMode === 'basic' || inputMode === 'tag'
     ? inputMode
     : simpleInput ? 'court' : 'detailed';
+  const directionInput = useAppStore((state) => state.directionInput);
+  const availableInputLevels = getAvailableInputLevels(directionInput);
   const selectInputLevel = (level: 'basic' | 'tag' | 'court' | 'detailed') => {
     setInputMode(level === 'basic' || level === 'tag' ? level : 'court');
-    if (level === 'court' || level === 'detailed') {
-      setSimpleInput(level === 'court');
+    // Direction input keeps the detail rows the Settings choose; "detailed" turns them on.
+    if (level === 'detailed') {
+      setSimpleInput(false);
     }
   };
   const confirmPointAssignment = useAppStore((state) => state.confirmPointAssignment);
@@ -2127,18 +2130,22 @@ export function ScoutingPage() {
         ['tag', 'inputModeTag', 'inputModeTagHint'],
         ['court', 'inputModeCourt', 'inputModeCourtHint'],
         ['detailed', 'inputModeDetailed', 'inputModeDetailedHint'],
-      ] as const).filter(([level]) => AVAILABLE_INPUT_LEVELS.includes(level)).map(([level, labelKey, hintKey]) => (
+      ] as const).filter(([level]) => availableInputLevels.includes(level)).map(([level, labelKey, hintKey]) => {
+        // "Direction" stands for both court levels (with or without the detail rows).
+        const isActive = inputLevel === level || (level === 'court' && inputLevel === 'detailed');
+        return (
         <button
           key={level}
           type="button"
-          className={`scouting-screen__input-mode-button${inputLevel === level ? ' is-active' : ''}`}
-          aria-pressed={inputLevel === level}
+          className={`scouting-screen__input-mode-button${isActive ? ' is-active' : ''}`}
+          aria-pressed={isActive}
           title={t(hintKey)}
           onClick={() => selectInputLevel(level)}
         >
-          {t(labelKey)}
+          {t(isPhone && level === 'court' ? 'inputModeCourtShort' : labelKey)}
         </button>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -2664,7 +2671,6 @@ export function ScoutingPage() {
                   rightTeamSide={rightTeamSide}
                   recordTeams={tagRecordTeams}
                   onRecordTeamsChange={setTagRecordTeams}
-                  confirmPoint={confirmPointAssignment}
                   onCommitTouches={handleTouchesCommitted}
                   onFinalizeRally={finalizeRally}
                   onUndo={handleGroupedUndo}

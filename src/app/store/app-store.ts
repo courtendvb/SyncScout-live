@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { DIRECTION_INPUT_ENABLED } from '@src/features/scouting/model/input-levels';
 import type { MatchProject } from '@src/domain/match/types';
 import { createEmptyMatchProject } from '@src/domain/match/factories';
 import { normalizeMatchProject } from '@src/domain/match';
@@ -51,6 +50,8 @@ type Preferences = {
   inputMode: InputMode;
   feedbackSound: boolean;
   tagRecordTeams: TagRecordTeams;
+  /** Offer direction input (drawing the ball on the court). Off by default. */
+  directionInput: boolean;
 };
 
 const DEFAULT_PREFERENCES: Preferences = {
@@ -65,14 +66,15 @@ const DEFAULT_PREFERENCES: Preferences = {
   feedbackSound: true,
   // Most coaches record their own team; the home team is taken as "us".
   tagRecordTeams: 'home',
+  directionInput: false,
 };
 
 function loadPreferences(): Preferences {
   try {
     const raw = window.localStorage.getItem(PREFERENCES_KEY);
     const preferences = raw ? { ...DEFAULT_PREFERENCES, ...(JSON.parse(raw) as Partial<Preferences>) } : DEFAULT_PREFERENCES;
-    // Court drawing is not offered (see DIRECTION_INPUT_ENABLED): a stored "court" choice becomes tags.
-    return !DIRECTION_INPUT_ENABLED && preferences.inputMode === 'court'
+    // Court drawing is offered only with direction input on: otherwise a stored "court" choice becomes tags.
+    return !preferences.directionInput && preferences.inputMode === 'court'
       ? { ...preferences, inputMode: 'tag' }
       : preferences;
   } catch {
@@ -92,6 +94,7 @@ function savePreferences(state: Preferences) {
       inputMode: state.inputMode,
       feedbackSound: state.feedbackSound,
       tagRecordTeams: state.tagRecordTeams,
+      directionInput: state.directionInput,
     };
     window.localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
@@ -118,6 +121,7 @@ interface AppStoreState {
   inputMode: InputMode;
   feedbackSound: boolean;
   tagRecordTeams: TagRecordTeams;
+  directionInput: boolean;
   createProject: () => void;
   setActiveProject: (project: MatchProject) => void;
   closeProject: () => void;
@@ -130,6 +134,7 @@ interface AppStoreState {
   setInputMode: (value: InputMode) => void;
   setFeedbackSound: (value: boolean) => void;
   setTagRecordTeams: (value: TagRecordTeams) => void;
+  setDirectionInput: (value: boolean) => void;
 }
 
 export const useAppStore = create<AppStoreState>((set, get) => {
@@ -175,6 +180,10 @@ export const useAppStore = create<AppStoreState>((set, get) => {
   },
   setTagRecordTeams: (value) => {
     setPreference({ tagRecordTeams: value });
+  },
+  setDirectionInput: (value) => {
+    // Turning it off while drawing on the court moves the live input to tags.
+    setPreference(!value && get().inputMode === 'court' ? { directionInput: value, inputMode: 'tag' } : { directionInput: value });
   },
   setFeedbackSound: (value) => {
     setPreference({ feedbackSound: value });

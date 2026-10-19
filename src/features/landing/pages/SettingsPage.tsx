@@ -4,7 +4,7 @@ import type { Locale } from '@src/i18n/locale';
 import type { TranslationKey } from '@src/i18n/translations';
 import type { SkillEvaluation } from '@src/domain/common/enums';
 import { useAppStore } from '@src/app/store/app-store';
-import { DIRECTION_INPUT_ENABLED, LANDSCAPE_ONLY_INPUT } from '@src/features/scouting/model/input-levels';
+import { LANDSCAPE_ONLY_INPUT } from '@src/features/scouting/model/input-levels';
 import { SyncScoutSettingsSection } from '@src/features/syncscout/SyncScoutSettingsSection';
 import { resetLocalData } from '@src/infrastructure/storage/reset-local-data';
 import { matchRepository } from '@src/infrastructure/repositories';
@@ -152,6 +152,8 @@ export function SettingsPage() {
   const setMarkerScale = useAppStore((state) => state.setMarkerScale);
   const confirmPointAssignment = useAppStore((state) => state.confirmPointAssignment);
   const simpleInput = useAppStore((state) => state.simpleInput);
+  const directionInput = useAppStore((state) => state.directionInput);
+  const setDirectionInput = useAppStore((state) => state.setDirectionInput);
   const setSimpleInput = useAppStore((state) => state.setSimpleInput);
   const feedbackSound = useAppStore((state) => state.feedbackSound);
   const setFeedbackSound = useAppStore((state) => state.setFeedbackSound);
@@ -234,7 +236,7 @@ export function SettingsPage() {
           </section>
 
           {/* Court drawing only (toolbar and player markers on the court). */}
-          {DIRECTION_INPUT_ENABLED ? (
+          {directionInput ? (
             <>
           <section className="settings-page__section">
             <label className="form-label">
@@ -281,7 +283,16 @@ export function SettingsPage() {
 
           <section className="settings-page__section">
             <h2 className="settings-page__section-title">{t('scoutingSettingsTitle')}</h2>
-            {DIRECTION_INPUT_ENABLED ? (
+            <label className="settings-page__checkbox-label">
+              <input
+                type="checkbox"
+                checked={directionInput}
+                onChange={(e) => setDirectionInput(e.target.checked)}
+              />
+              {t('directionInputLabel')}
+            </label>
+            <p className="settings-page__text">{t('directionInputDescription')}</p>
+            {directionInput ? (
               <>
                 <label className="settings-page__checkbox-label">
                   <input
@@ -351,7 +362,7 @@ export function SettingsPage() {
           </section>
 
           {/* Key bindings apply to typed DataVolley codes (Detailed input only). */}
-          {DIRECTION_INPUT_ENABLED ? (
+          {directionInput ? (
           <section className="settings-page__section">
             <h2 className="settings-page__section-title">{t('keyBindingsTitle')}</h2>
             <p className="settings-page__text">{t('keyBindingsDescription')}</p>
