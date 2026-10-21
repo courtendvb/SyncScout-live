@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { VIDEO_FEATURES_ENABLED } from '@src/app/config/features';
 import { useTranslation } from '@src/i18n';
 import { AppPageLayout } from '@src/components/layout/AppPageLayout';
 import { useAppStore } from '@src/app/store/app-store';
@@ -356,6 +357,7 @@ export function AnalysisPage() {
                     {t('trendsTitle')}
                   </button>
                 ) : null}
+                {VIDEO_FEATURES_ENABLED ? (
                 <button
                   type="button"
                   role="tab"
@@ -365,6 +367,7 @@ export function AnalysisPage() {
                 >
                   {t('videoAnalysis')}
                 </button>
+                ) : null}
               </div>
 
               {statsView === 'report' ? (
@@ -405,7 +408,7 @@ export function AnalysisPage() {
                 <div className="stats-view-tabs__panel analysis-page__charts-panel" role="tabpanel">
                   <TrendsPanel similarityFocus={similarityFocus} teamOptions={trendsTeamOptions} />
                 </div>
-              ) : statsView === 'video-analysis' ? (
+              ) : statsView === 'video-analysis' && VIDEO_FEATURES_ENABLED ? (
                 <div className="stats-view-tabs__panel analysis-page__charts-panel" role="tabpanel">
                   <VideoAnalysisPanel project={activeProject} />
                 </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { VIDEO_FEATURES_ENABLED } from '@src/app/config/features';
 import { formatLocalDate } from '@src/lib/utils/local-date';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '@src/i18n';
@@ -201,11 +202,13 @@ export function TeamAnalysisPage() {
                     ? t('homeTeam', { defaultValue: 'Home' })
                     : t('awayTeam', { defaultValue: 'Away' })}
                 </span>
+                {VIDEO_FEATURES_ENABLED ? (
                 <span className={`team-analysis-match-item__video-badge${project.videoAnalysis?.source ? ' has-video' : ''}`}>
                   {project.videoAnalysis?.source
                     ? t('videoPresent')
                     : t('videoMissing')}
                 </span>
+                ) : null}
                 {result.hasResult ? (
                   <div className="team-analysis-match-item__result">
                     <MatchResultDisplay
@@ -278,7 +281,7 @@ export function TeamAnalysisPage() {
             ['player-performance', t('performancePlayer')],
             ['sideout-study', t('sideOutStudy')],
             ...(trendsEnabled ? [['trends', t('trendsTitle')] as [AnalysisTab, string]] : []),
-            ['video-analysis', t('videoAnalysis')],
+            ...(VIDEO_FEATURES_ENABLED ? [['video-analysis', t('videoAnalysis')] as [AnalysisTab, string]] : []),
           ] as [AnalysisTab, string][]
         ).map(([tab, label]) => (
           <button
@@ -320,7 +323,7 @@ export function TeamAnalysisPage() {
             ]}
           />
         </div>
-      ) : activeTab === 'video-analysis' ? (
+      ) : activeTab === 'video-analysis' && VIDEO_FEATURES_ENABLED ? (
         <div className="stats-view-tabs__panel analysis-page__charts-panel" role="tabpanel">
           <MultiVideoAnalysisPanel
             projects={selectedMatches}

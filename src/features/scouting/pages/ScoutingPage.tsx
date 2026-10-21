@@ -1,4 +1,5 @@
 import { formatPlayerLabel, getPlayerDisplayName } from '@src/domain/roster/helpers';
+import { VIDEO_FEATURES_ENABLED } from '@src/app/config/features';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useTranslation } from '@src/i18n';
@@ -2292,7 +2293,7 @@ export function ScoutingPage() {
   // anyway — the panel isn't even rendered in that case (see below).
   // Both button pads (basic and tag) replace the court.
   const isTagInputLiveRally = (inputMode === 'tag' || inputMode === 'basic') && activeStage === 'live_rally';
-  const isVideoDocked = (isVerticalCourtLiveRally || isTagInputLiveRally) && !videoPanelCollapsed && !isPhone;
+  const isVideoDocked = VIDEO_FEATURES_ENABLED && (isVerticalCourtLiveRally || isTagInputLiveRally) && !videoPanelCollapsed && !isPhone;
   // The left-column header only earns its keep when the court is the sole
   // occupant of the row (it trades width for extra court height). Once the
   // video panel docks beside the court, that trade stops being worth it —
@@ -2755,7 +2756,7 @@ export function ScoutingPage() {
                   </div>
                 </div>
               )}
-              {!isPhone && (
+              {!isPhone && VIDEO_FEATURES_ENABLED && (
                 <LiveScoutingVideoPanel
                   ref={liveVideoPanelRef}
                   project={activeProject}
