@@ -251,10 +251,10 @@
   <p class="hero-note" data-i18n="hero.note">インストール不要。ブラウザで開くだけで使え、ホーム画面に追加すればネットのない体育館でも動きます。</p>
 
   <figure class="device" style="margin-bottom:0">
-    <img class="shot-ja" src="intro/tag-ja.jpg" width="2360" height="1640" alt="タグ入力の画面。左に自チームの6人、右にスキルと評価のマス目" loading="eager">
-    <img class="shot-en" src="intro/tag-en.jpg" width="2360" height="1640" alt="The tag input screen: your six players on the left, the skill and grade grid on the right" loading="lazy">
+    <img class="shot-ja" src="intro/tag-ja.jpg" width="2360" height="1640" alt="タグ入力の画面。左に自チームの6人、右に次のプレーの評価ボタンが4つ" loading="eager">
+    <img class="shot-en" src="intro/tag-en.jpg" width="2360" height="1640" alt="The tag input screen: your six players on the left, the next play's four outcomes on the right" loading="lazy">
   </figure>
-  <p class="device-caption" data-i18n="hero.caption">iPad でのタグ入力。選手とマスを押すだけで、1プレーが記録されます。</p>
+  <p class="device-caption" data-i18n="hero.caption">iPad でのタグ入力。次のプレーの評価だけが大きく出るので、選手と評価を押すだけです。</p>
 </header>
 
 <section id="features">
@@ -267,7 +267,7 @@
       <div class="feat">
         <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><path d="M15.5 17.5l2 2 3.5-4"/></svg></div>
         <h3 data-i18n="f1.h3">2タップで1プレー</h3>
-        <p data-i18n="f1.p">選手を押して、「スキル × 評価」のマスを押すだけ。テンキーでコードを打つ必要はありません。サーブとセットはマスを押すだけで、サーバーとセッターが自動で入ります。</p>
+        <p data-i18n="f1.p">ラリーの流れに沿って、次のプレーの評価ボタンが4つだけ大きく出ます。選手を押して評価を押すだけ。サーブは評価だけで、アタックの前のセットはセッターが自動で入ります。</p>
       </div>
       <div class="feat">
         <div class="tool-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
@@ -327,17 +327,16 @@
         <h3 data-i18n="modes.tag.h3">タグ</h3>
         <div class="taps" data-i18n="modes.tag.taps">1プレー = 2タップ</div>
         <ul>
-          <li data-i18n="modes.tag.l1">選手 → マス（スキル × 評価）の順に押す。マスを先に押してもよい</li>
+          <li data-i18n="modes.tag.l1">サーブ → レセプション → アタックとアプリが流れを進め、次のプレーの評価4つだけを大きく出す</li>
           <li data-i18n="modes.tag.l2">記録するのは自チームだけ（相手は「相手のミス」「相手の得点」で済む）か、両チームかを選べる</li>
-          <li data-i18n="modes.tag.l3">次に来そうなスキルの行が光る。球種・ブロック枚数・セッターコールも「詳細」から</li>
+          <li data-i18n="modes.tag.l3">次のプレーに入りそうな選手が光る。得点で終わる評価は確定なしでそのまま得点に</li>
         </ul>
-        <div class="grade" aria-label="Grades">
-          <span class="bad"><b>=</b><span data-i18n="grade.err">ミス</span></span>
-          <span><b>/</b><span data-i18n="grade.slash">返球など</span></span>
-          <span><b>-</b><span data-i18n="grade.minus">悪い</span></span>
-          <span><b>!</b><span data-i18n="grade.ex">まずまず</span></span>
-          <span><b>+</b><span data-i18n="grade.plus">良い</span></span>
-          <span class="good"><b>#</b><span data-i18n="grade.hash">決定・完璧</span></span>
+        <div class="grade" aria-label="Reception">
+          <span class="bad"><b>0</b><span data-i18n="grade.err">ミス</span></span>
+          <span><b>1</b><span data-i18n="grade.minus">悪い</span></span>
+          <span><b>2</b><span data-i18n="grade.plus">良い</span></span>
+          <span class="good"><b>3</b><span data-i18n="grade.hash">完璧</span></span>
+          <span data-i18n="grade.note">← レセプションの4段階</span>
         </div>
       </div>
     </div>
@@ -436,6 +435,10 @@
         <p data-i18n="a5">いりません。会場では記録するだけで、動画は試合後に YouTube へ上げてください。送るときに最初のサーブの時刻を入れれば、全プレーの時刻が動画に合います。ずれたときは −15〜+15 秒で微調整できます。</p>
       </details>
       <details class="faq-item">
+        <summary><span data-i18n="q7">コース（ディレクション）も記録できますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
+        <p data-i18n="a7">できます。設定画面で「ディレクション入力を使う」を有効にすると、コート図の上でボールの軌道をなぞってコースとゾーンまで記録するモードが加わります。手間がかかるので、慣れた人向けのオプションです。</p>
+      </details>
+      <details class="faq-item">
         <summary><span data-i18n="q6">英語でも使えますか？</span><svg class="faq-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
         <p data-i18n="a6">はい。アプリのメニューバー右端の「EN / JP」で切り替えられます。</p>
       </details>
@@ -498,11 +501,11 @@
     "hero.lead":"Sync Scout Live records a volleyball match right at the venue, on a tablet or a phone. Send it to SyncScout as a <span class=\"mono\">.dvw</span> and it lines up with your YouTube match video, so the whole team can review it rally by rally.",
     "hero.cta1":"Open the app — free →","hero.cta2":"See how you scout","hero.cta3":"What is SyncScout",
     "hero.note":"Nothing to install. It runs in the browser, and once added to the home screen it works in gyms with no signal.",
-    "hero.caption":"Tag input on an iPad: tap a player and a cell, and the play is recorded.",
+    "hero.caption":"Tag input on an iPad: only the next play's outcomes are shown, large — tap the player and the outcome.",
     "feat.eyebrow":"What it does",
     "feat.h2":"Buttons only, right at the venue.<br>Data you can actually review.",
     "f1.h3":"Two taps per play",
-    "f1.p":"Tap the player, then the skill × grade cell. No codes to type on a keypad. Serves and sets need only the cell: the server and the setter fill themselves in.",
+    "f1.p":"Following the rally, only the next play's four outcomes are shown, large. Tap the player, then the outcome. A serve is just the outcome, and the set before an attack goes to the setter by itself.",
     "f2.h3":"Start with jersey numbers",
     "f2.p":"No names needed. The lineup is a tap on a position, then on a jersey. The opponent doesn't even need a name.",
     "f3.h3":"Rotations take care of themselves",
@@ -521,10 +524,10 @@
     "modes.basic.l2":"The serve button shows the current server's jersey and follows the rotation",
     "modes.basic.l3":"Anyone on the bench can do it, and SyncScout still plays the match rally by rally",
     "modes.tag.tag":"Play by play","modes.tag.who":"Who, what, how well","modes.tag.h3":"Tags","modes.tag.taps":"1 play = 2 taps",
-    "modes.tag.l1":"Tap a player, then a cell (skill × grade) — or the cell first",
+    "modes.tag.l1":"The app follows serve → reception → attack and shows only the next play's four outcomes, large",
     "modes.tag.l2":"Record your team only (the opponent is just “opponent error” or “opponent point”) or both teams",
-    "modes.tag.l3":"The skill most likely next is highlighted. Ball type, blockers and setter calls are under Details",
-    "grade.err":"Error","grade.slash":"Overpass etc.","grade.minus":"Poor","grade.ex":"OK","grade.plus":"Good","grade.hash":"Point / perfect",
+    "modes.tag.l3":"The players likely to make the next play light up. Outcomes that end the rally score at once, no confirming",
+    "grade.err":"Error","grade.minus":"Poor","grade.plus":"Good","grade.hash":"Perfect","grade.note":"← the 0–3 pass scale",
     "how.eyebrow":"How it works","how.h2":"Record it, send it, review it as a team.","how.fig3":"Team",
     "s1.h3":"Record at the venue","s1.p":"Create the match, enter each set's lineup by jersey, and scout in Basic or Tags. The device is used sideways.",
     "s2.h3":"Send to SyncScout","s2.p":"After the match, tap “Send to SyncScout” and enter the YouTube URL and the time of the first serve. You sign in with the same team ID and passphrase as SyncScout.",
@@ -538,6 +541,7 @@
     "q3":"Where is the match data stored?","a3":"Only in the browser on your device; nothing goes to a server. The exception is “Send to SyncScout”, which sends that one match to the team you signed in with. Clearing the browser's data deletes your records too, so back up often from the Data page.",
     "q4":"Can I record the opponent's plays too?","a4":"Yes. Under Details in tag input, set “Teams to record” to both teams to see all twelve players and record either side. When you record only your team, the opponent's serves are still recorded automatically.",
     "q5":"Do I need the video during the match?","a5":"No. At the venue you only record; upload the video to YouTube afterwards. Entering the time of the first serve when you send lines every play up with the video, and you can nudge it by −15 to +15 seconds.",
+    "q7":"Can I record courses (directions) too?","a7":"Yes. Turn on “Use direction input” in Settings to add a mode where you trace the ball on the court to record courses and zones. It takes more taps, so it's an option for experienced scouts.",
     "q6":"Is it available in English?","a6":"Yes. Switch with “EN / JP” at the right end of the app's menu bar.",
     "cta.h2":"Start scouting from your next match.","cta.p":"No sign-up, no install. Open the app on a tablet or phone and you're ready.",
     "cta.b1":"Open the app — free →","cta.b2":"Visit SyncScout",
